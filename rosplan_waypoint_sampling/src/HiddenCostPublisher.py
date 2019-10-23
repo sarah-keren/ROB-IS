@@ -38,7 +38,7 @@ class HiddenCostMap:
             maxc = 0
             for y in range(grid.info.height):
                 for x in range(grid.info.width):
-                    cost = 1
+                    cost = 0
                     for (posx, posy, r) in self.peaks:
                         cost += self._doughnut((x, y), (posx, posy), r, r/2) / len(self.peaks)
                     if cost > maxc:
@@ -52,7 +52,7 @@ class HiddenCostMap:
 
 
 if __name__ == '__main__':
-    rospy.init_node('hidden_costmap', anonymous=True)
+    rospy.init_node('hidden_costmap')
     try:
         h = HiddenCostMap()
         h.gen_costmap()
