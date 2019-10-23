@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>rob_is</name>
+  <version>1.0.0</version>
+  <description>
+    Information shaping for robotics.
+  </description>
+  <maintainer email="michael.cashmore@strath.ac.uk">Michael Cashmore</maintainer>
+  <maintainer email="gerard.canal@kcl.ac.uk">Gerard Canal</maintainer>
+  <maintainer email="skeren@g.harvard.edu">Sarah Keren</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://github.com/KCL-Planning/ROSPlan</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
