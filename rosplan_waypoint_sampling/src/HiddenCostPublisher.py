@@ -10,8 +10,14 @@ class HiddenCostMap:
         self._static_map = None
         self._hidden_costmap = None
         self.costmap_pub = rospy.Publisher('costmap', OccupancyGrid, queue_size=10)
+
         if rospy.has_param('~peaks'):
             self.peaks = rospy.get_param('~peaks')
+        if rospy.has_param('~doughnuts'):
+            self.doughnuts = rospy.get_param('~doughnuts')
+        if rospy.has_param('~bananas'):
+            self.bananas = rospy.get_param('~bananas')
+
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
 
     def set_map(self, msg):
@@ -23,8 +29,14 @@ class HiddenCostMap:
         return prob
 
     def gen_costmap(self):
-        if rospy.has_param('~peaks'):  # In case peaks changed
+
+        if rospy.has_param('~peaks'):
             self.peaks = rospy.get_param('~peaks')
+        if rospy.has_param('~doughnuts'):
+            self.doughnuts = rospy.get_param('~doughnuts')
+        if rospy.has_param('~bananas'):
+            self.bananas = rospy.get_param('~bananas')
+
         # Wait for map
         while not rospy.is_shutdown() and not self._static_map:
             rospy.sleep(0.5)
@@ -39,8 +51,8 @@ class HiddenCostMap:
             for y in range(grid.info.height):
                 for x in range(grid.info.width):
                     cost = 0
-                    for (posx, posy, r) in self.peaks:
-                        cost += self._doughnut((x, y), (posx, posy), r, r/2) / len(self.peaks)
+                    for (posx, posy, r) in self.doughnuts:
+                        cost += self._doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, r/2) / len(self.doughnuts)
                     if cost > maxc:
                         maxc = cost
                     grid.data.append(cost)
