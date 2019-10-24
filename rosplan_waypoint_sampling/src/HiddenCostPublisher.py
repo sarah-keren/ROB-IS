@@ -25,8 +25,23 @@ class HiddenCostMap:
 
     def _doughnut(self, p, c, mu, sigma):
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
-        prob    = math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
+        prob = math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
         return prob
+
+    def _banana(self, p, c, angle, arclen, mu, sigma):
+        gamma = angle - arclen/2.0
+        theta = gamma + arclen
+        k = math.atan2(c[0]-p[0], c[1]-p[1])
+        #if k >= gamma and k <= theta:
+        if k < gamma:
+            probangle = math.e ** (-((k - gamma) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
+        elif k > theta:
+            probangle = math.e ** (-((k - theta) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
+        else:
+            probangle = 1 / math.sqrt(2 * math.pi * sigma ** 2)
+        d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
+        prob = math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
+        return prob*probangle
 
     def gen_costmap(self):
 
@@ -53,6 +68,8 @@ class HiddenCostMap:
                     cost = 0
                     for (posx, posy, r, std_dev) in self.doughnuts:
                         cost += self._doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev) / len(self.doughnuts)
+                    for (posx, posy, r, a, al, std_dev) in self.bananas:
+                        cost += self._banana((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), a, al, r, std_dev) / (len(self.bananas) + len(self.doughnuts))
                     if cost > maxc:
                         maxc = cost
                     grid.data.append(cost)
