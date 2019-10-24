@@ -30,6 +30,9 @@
 #include <occupancy_grid_utils/ray_tracer.h>
 #include <occupancy_grid_utils/coordinate_conversions.h>
 #include <std_srvs/Trigger.h>
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_ros/GridMapRosConverter.hpp>
+#include <grid_map_msgs/GridMap.h>
 
 #ifndef KCL_rp_roadmap_filter
 #define KCL_rp_roadmap_filter
@@ -75,6 +78,7 @@ namespace KCL_rosplan {
         /// visualisation functions
         void pubWPGraph();
         void clearWPGraph();
+        bool animate_sampling_;
 
         /// Update KB function
         void updateKB();
@@ -85,6 +89,7 @@ namespace KCL_rosplan {
         ros::Subscriber map_sub_;
         /// topics that this node offers
         ros::Publisher waypoints_pub_; // for visualisation purposes
+        ros::Publisher probability_pub_; // for visualisation purposes
         /// services that this node will query
         ros::ServiceClient update_kb_client_, update_kb_client_array_;
         /// services that are offered by this node
@@ -101,8 +106,12 @@ namespace KCL_rosplan {
 
         /// Roadmap
         std::vector<geometry_msgs::PoseStamped> waypoints_;
-        std::vector<geometry_msgs::PoseStamped> filtered_waypoints_;
+        std::vector<int> sampled_waypoint_ids_;
+        std::vector<int> unsampled_waypoint_ids_;
         int waypoint_count_;
+
+        // probability shapes
+        double minimum_radius_;
 
         /// to store the namespace in which the waypoints are stored in the parameter server
         std::string wp_namespace_input_;

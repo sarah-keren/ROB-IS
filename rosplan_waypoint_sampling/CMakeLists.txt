@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   genmsg
   rosplan_interface_mapping
+  grid_map_msgs
+  grid_map_ros
 )
 
 catkin_package()
