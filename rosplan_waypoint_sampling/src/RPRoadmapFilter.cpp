@@ -177,7 +177,7 @@ namespace KCL_rosplan {
         // check if wps are available in param server, if so, load them in symbolic KB and visualise them
         loadParams();
         ROS_INFO("KCL: (%s) Waypoints loaded", ros::this_node::getName().c_str());
-        nav_msgs::OccupancyGrid *map = &cost_map_;
+        nav_msgs::OccupancyGrid map = cost_map_;
 
         // prepare ID lists
         sampled_waypoint_ids_.clear();
@@ -194,11 +194,11 @@ namespace KCL_rosplan {
             std::vector<int>::iterator uwit = unsampled_waypoint_ids_.begin();
             for(; uwit!=unsampled_waypoint_ids_.end(); uwit++) {
                 // get cell
-                int cell_x = (int) (waypoints_[*uwit].pose.position.x/map->info.resolution); 
-                int cell_y = (int) (waypoints_[*uwit].pose.position.y/map->info.resolution);
-                int index =  cell_x + cell_y*map->info.width;
-                w_sum += map->data[index];
-                wp_weight.push_back(map->data[index]);
+                int cell_x = (int) (waypoints_[*uwit].pose.position.x/map.info.resolution); 
+                int cell_y = (int) (waypoints_[*uwit].pose.position.y/map.info.resolution);
+                int index =  cell_x + cell_y*map.info.width;
+                w_sum += map.data[index];
+                wp_weight.push_back(map.data[index]);
             }
 
             // sample one waypoint
@@ -217,15 +217,15 @@ namespace KCL_rosplan {
             uploadWPToParamServer(ss.str(), waypoints_[sampled_wp_id]);
 
             // reduce probability around waypoint
-            int cell_x = (int) (waypoints_[sampled_wp_id].pose.position.x/map->info.resolution); 
-            int cell_y = (int) (waypoints_[sampled_wp_id].pose.position.y/map->info.resolution);
-            for(int x = cell_x - minimum_radius_/map->info.resolution; x < cell_x + minimum_radius_/map->info.resolution; x++) {
-            for(int y = cell_y - minimum_radius_/map->info.resolution; y < cell_y + minimum_radius_/map->info.resolution; y++) {
-                double d = (x-cell_x)*map->info.resolution * (x-cell_x)*map->info.resolution;
-                d = d + (y-cell_y)*map->info.resolution * (y-cell_y)*map->info.resolution;
+            int cell_x = (int) (waypoints_[sampled_wp_id].pose.position.x/map.info.resolution); 
+            int cell_y = (int) (waypoints_[sampled_wp_id].pose.position.y/map.info.resolution);
+            for(int x = cell_x - minimum_radius_/map.info.resolution; x < cell_x + minimum_radius_/map.info.resolution; x++) {
+            for(int y = cell_y - minimum_radius_/map.info.resolution; y < cell_y + minimum_radius_/map.info.resolution; y++) {
+                double d = (x-cell_x)*map.info.resolution * (x-cell_x)*map.info.resolution;
+                d = d + (y-cell_y)*map.info.resolution * (y-cell_y)*map.info.resolution;
                 if(d < minimum_radius_ * minimum_radius_) { 
-                    int index =  x + y*map->info.width;
-                    map->data[index] = 0;
+                    int index =  x + y*map.info.width;
+                    map.data[index] = 0;
                 }
 
             }}
@@ -239,13 +239,13 @@ namespace KCL_rosplan {
                 pubWPGraph();
                 
                 grid_map::GridMap gm;
-                grid_map::GridMapRosConverter::fromOccupancyGrid(*map, "probability", gm);
+                grid_map::GridMapRosConverter::fromOccupancyGrid(map, "probability", gm);
                 grid_map_msgs::GridMap gridMapMessage;
                 grid_map::GridMapRosConverter::toMessage(gm, gridMapMessage);
                 
                 // scale grid map to 1m height
-                for(int i=0; i<gridMapMessage.data.data.size(); i++)
-                    gridMapMessage.data.data[i] = gridMapMessage.data.data[i]/100.0;
+                for(int i=0; i<gridMapMessage.data[0].data.size(); i++)
+                    gridMapMessage.data[0].data[i] = gridMapMessage.data[0].data[i]/25.0;
 
                 probability_pub_.publish(gridMapMessage);
 
