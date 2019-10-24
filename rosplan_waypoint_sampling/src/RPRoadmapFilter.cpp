@@ -29,12 +29,19 @@ namespace KCL_rosplan {
         nh_.param<std::string>("wp_reference_frame", wp_reference_frame_, "map");
         nh_.param<std::string>("rosplan_kb_name", rosplan_kb_name, "rosplan_knowledge_base");
         nh_.param<std::string>("costmap_topic", costmap_topic_, "costmap_topic");
+        nh_.param<double>("minimum_sample_separation", minimum_radius_, 1.0);
+        nh_.param<bool>("animate_sampling", animate_sampling_, false);
+
 
         // subscriptions of this node, robot odometry and costmap
         map_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(costmap_topic_, 1, &RPRoadmapFilter::costMapCallback, this);
 
         // publications of this node (for visualisation purposes), waypoints and connectivity information (edges)
         waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz/waypoints", 10, true);
+
+        // publications of the modified probability map
+        // probability_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("viz/probability", 10, true);
+        probability_pub_ = nh_.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
 
         // services offered by this node, create random wp (create prm), add single wp, remove a waypoint
         filter_waypoint_service_server_ = nh_.advertiseService("filter_waypoints",&RPRoadmapFilter::filterRoadmap, this);
@@ -170,35 +177,83 @@ namespace KCL_rosplan {
         // check if wps are available in param server, if so, load them in symbolic KB and visualise them
         loadParams();
         ROS_INFO("KCL: (%s) Waypoints loaded", ros::this_node::getName().c_str());
-
-        // calculate total weight
-        int w_sum = 0;
         nav_msgs::OccupancyGrid *map = &cost_map_;
-        std::vector<int> wp_weight;
-        for(int i=0;i<waypoints_.size();i++) {
-            // get cell
-            int cell_x = (int) (waypoints_[i].pose.position.x/map->info.resolution); 
-            int cell_y = (int) (waypoints_[i].pose.position.y/map->info.resolution);
-            int index =  cell_x + cell_y*map->info.width;
-            w_sum += map->data[index];
-            wp_weight.push_back(map->data[index]);
-        }
 
-        // sample waypoints
-        int count = 0;
-        filtered_waypoints_.clear();
-        for(int i=0;i<waypoint_count_ && i<waypoints_.size();i++) {
-            int sample = rand() % w_sum;
+        // prepare ID lists
+        sampled_waypoint_ids_.clear();
+        unsampled_waypoint_ids_.clear();
+        for(int i=0;i<waypoints_.size(); i++) unsampled_waypoint_ids_.push_back(i);
+
+        // begin sampling
+        std::vector<int> wp_weight;
+        while(sampled_waypoint_ids_.size()<waypoint_count_ && unsampled_waypoint_ids_.size()>0) {
+
+            // calculate total current unsampled weight
+            int w_sum = 0;
+            wp_weight.clear();
+            std::vector<int>::iterator uwit = unsampled_waypoint_ids_.begin();
+            for(; uwit!=unsampled_waypoint_ids_.end(); uwit++) {
+                // get cell
+                int cell_x = (int) (waypoints_[*uwit].pose.position.x/map->info.resolution); 
+                int cell_y = (int) (waypoints_[*uwit].pose.position.y/map->info.resolution);
+                int index =  cell_x + cell_y*map->info.width;
+                w_sum += map->data[index];
+                wp_weight.push_back(map->data[index]);
+            }
+
+            // sample one waypoint
+            double sample =  rand() % w_sum;
             int counter = 0;
-            while(sample > 0 && counter < waypoints_.size()) {
+            while(sample > 0 && counter < unsampled_waypoint_ids_.size()) {
                 sample = sample - wp_weight[counter];
                 if(sample > 0) counter++;
             }
-            filtered_waypoints_.push_back(waypoints_[counter]);
+            int sampled_wp_id = unsampled_waypoint_ids_[counter];
+            unsampled_waypoint_ids_.erase(unsampled_waypoint_ids_.begin() + counter);
+            sampled_waypoint_ids_.push_back(sampled_wp_id);
+
             std::stringstream ss;
-            ss << "wp" << count;
-            uploadWPToParamServer(ss.str(), waypoints_[counter]);
-            count++;
+            ss << "wp" << (sampled_waypoint_ids_.size()-1);
+            uploadWPToParamServer(ss.str(), waypoints_[sampled_wp_id]);
+
+            // reduce probability around waypoint
+            int cell_x = (int) (waypoints_[sampled_wp_id].pose.position.x/map->info.resolution); 
+            int cell_y = (int) (waypoints_[sampled_wp_id].pose.position.y/map->info.resolution);
+            for(int x = cell_x - minimum_radius_/map->info.resolution; x < cell_x + minimum_radius_/map->info.resolution; x++) {
+            for(int y = cell_y - minimum_radius_/map->info.resolution; y < cell_y + minimum_radius_/map->info.resolution; y++) {
+                double d = (x-cell_x)*map->info.resolution * (x-cell_x)*map->info.resolution;
+                d = d + (y-cell_y)*map->info.resolution * (y-cell_y)*map->info.resolution;
+                if(d < minimum_radius_ * minimum_radius_) { 
+                    int index =  x + y*map->info.width;
+                    map->data[index] = 0;
+                }
+
+            }}
+
+            // publish probability map
+            ros::Rate loopRate(0.5);
+            if(animate_sampling_) {
+
+                // visualise
+                clearWPGraph();
+                pubWPGraph();
+                
+                grid_map::GridMap gm;
+                grid_map::GridMapRosConverter::fromOccupancyGrid(*map, "probability", gm);
+                grid_map_msgs::GridMap gridMapMessage;
+                grid_map::GridMapRosConverter::toMessage(gm, gridMapMessage);
+                
+                // scale grid map to 1m height
+                for(int i=0; i<gridMapMessage.data.data.size(); i++)
+                    gridMapMessage.data.data[i] = gridMapMessage.data.data[i]/100.0;
+
+                probability_pub_.publish(gridMapMessage);
+
+                std::cout << "looping; sampled: " << sampled_waypoint_ids_.size() << std::endl;
+                ros::spinOnce();
+                loopRate.sleep();
+            }
+            
         }
 
         // visualise
@@ -230,14 +285,18 @@ namespace KCL_rosplan {
         
         // publish nodes as marker array
         int count = 0;
-        for (std::vector<geometry_msgs::PoseStamped>::iterator wit=filtered_waypoints_.begin(); wit!=filtered_waypoints_.end(); ++wit) {
+        std::vector<int>::iterator sit = sampled_waypoint_ids_.begin();
+        for (; sit!=sampled_waypoint_ids_.end(); sit++) {
+
+            
+
             visualization_msgs::Marker node_marker;
             node_marker.header.stamp = ros::Time();
             node_marker.header.frame_id = wp_reference_frame_;
             node_marker.ns = wp_namespace_output_;
             node_marker.type = visualization_msgs::Marker::CUBE;
             node_marker.action = visualization_msgs::Marker::MODIFY;
-            node_marker.pose = wit->pose;
+            node_marker.pose = waypoints_[*sit].pose;
             node_marker.scale.x = 0.35f;
             node_marker.scale.y = 0.35f;
             node_marker.scale.z = 0.35f;
@@ -258,14 +317,14 @@ namespace KCL_rosplan {
 
         visualization_msgs::MarkerArray marker_array;
         int count = 0;
-        for (std::vector<geometry_msgs::PoseStamped>::iterator wit=filtered_waypoints_.begin(); wit!=filtered_waypoints_.end(); ++wit) {
+        std::vector<int>::iterator sit = sampled_waypoint_ids_.begin();
+        for (; sit!=sampled_waypoint_ids_.end(); sit++) {
             visualization_msgs::Marker node_marker;
             node_marker.header.stamp = ros::Time();
             node_marker.header.frame_id = wp_reference_frame_;
             node_marker.ns = wp_namespace_output_;
             node_marker.action = visualization_msgs::Marker::DELETE;
             node_marker.id = count;
-
             marker_array.markers.push_back(node_marker);
             count++;
         }
@@ -283,7 +342,8 @@ namespace KCL_rosplan {
         rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updateInstSrv;
         int count = 0;
         std::stringstream ss;
-        for (std::vector<geometry_msgs::PoseStamped>::iterator wit=filtered_waypoints_.begin(); wit!=filtered_waypoints_.end(); ++wit) {
+        std::vector<int>::iterator sit = sampled_waypoint_ids_.begin();
+        for (; sit!=sampled_waypoint_ids_.end(); sit++) {
 
             ss.str("");
             ss << "wp" << count;
