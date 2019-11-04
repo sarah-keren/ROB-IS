@@ -45,6 +45,10 @@ class HiddenCostMap:
 
     def gen_costmap(self):
 
+        self.peaks = []
+        self.doughnuts = []
+        self.bananas = []
+
         if rospy.has_param('~peaks'):
             self.peaks = rospy.get_param('~peaks')
         if rospy.has_param('~doughnuts'):
