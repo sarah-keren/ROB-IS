@@ -21,21 +21,22 @@ class HiddenCostsGenerator:
         self.map_height = 0 
 	self.map_width = 0  
         self.resolution = 0
+        self.map_file_info = None
 
 
     def initialize(self):
         with open(r'%s'%self.map_file_path) as map_file:
-    	     map_file_info = yaml.full_load(map_file)
+    	     self.map_file_info = yaml.full_load(map_file)
              print('map_file_info:')	     
-             print(map_file_info)
+             print(self.map_file_info)
 	
-        map_img = cv2.imread(map_file_info['image']) 
-        [height, width, channels] = map_img.shape
+        self.map_img = cv2.imread(self.map_file_info['image']) 
+        [height, width, channels] = self.map_img.shape
 	print('image info')
 	print([height, width, channels])
         self.map_height = height
         self.map_width = width
-        self.resolution = map_file_info['resolution']
+        self.resolution = self.map_file_info['resolution']
 
     def generate_yaml_file(self, num_of_doughnuts, num_of_bananas):#, clusters_dimensions):
         
@@ -89,25 +90,57 @@ class HiddenCostsGenerator:
         mu = 0.5 
         sigma = 0.15
 	print('generating banana')
-        return [p, c, angle, arclen, mu, sigma]
-
+        #return [p, c, angle, arclen, mu, sigma]
+        object_dict= {'name': 'banana_%d'%self.index, 'x': p, 'y': c, 'radius': mu, 'angle': angle,  'arclen': arclen, 'std_dev': sigma, 'type': 'banana'}
+	return object_dict
     # p, c, mu, sigma
     def generate_doughnut(self, reference_point):
         self.index += 1
 	p = reference_point[0]  #4.17 +self.index*0.2 
         c = reference_point[1]  #round(38.8 +self.index*0.2,2)
-        mu = 0.5 
-        sigma = 0.75 
+        mu = 1.3 #0.5 
+        sigma = 0.3 #0.75 
         print('generating doughnut')
-        return [p, c, mu, sigma]
-
+        #return [p, c, mu, sigma]
+        object_dict= {'name': 'dougnut_%d'%self.index,'x': p, 'y': c, 'radius': mu, 'std_dev': sigma, 'type': 'doughnut'}
+	return object_dict
  	
     def generate_reference_point(self, ranges=None):
-        x_val = random.randint(1,self.map_width)*self.resolution
-        x_val = round(x_val,2)
-        y_val = random.randint(1,self.map_height)*self.resolution
-        y_val = round(y_val,2)
-	return [x_val, y_val] 
+
+	is_in_collision = True
+        x_val_pixel = -1
+        x_val = -1
+        y_val_pixel = -1        
+        y_val = -1
+	while is_in_collision:
+            #column   
+            col_val_pixel = random.randint(1,self.map_width-1)
+            col_val = col_val_pixel*self.resolution
+            col_val = round(col_val,2)
+
+            #row
+            row_val_pixel = random.randint(1,self.map_height-1)
+            row_val = row_val_pixel*self.resolution
+            row_val = round(row_val,2)
+	    
+            #check for collisions	
+            point_RGB_value = self.map_img[row_val_pixel,col_val_pixel]
+            print('point_RGB_value:')
+            print(point_RGB_value)
+	    #point_prob_value = point_RGB_value[0]+point_RGB_value[1]+point_RGB_value[2]/255 #(R+G+B)/255
+	    val_avg = (point_RGB_value[0]+point_RGB_value[1]+point_RGB_value[2])/3
+            #occ = (255 - color_avg) / 255.0;
+            point_prob_value = (255 - val_avg )/255.0 
+	
+            print('point_prob_value:')	
+            print(point_prob_value)
+            #if point_prob_value < self.map_file_info['free_thresh']:
+            if point_prob_value < 0.8:#self.map_file_info['free_thresh']:
+	        is_in_collision = False
+	    else:
+                print("found a collision in cell (%d,%d)- resampling"%(row_val_pixel, col_val_pixel))	
+
+	return [row_val, col_val] 
 	
 #    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas):
 #	mode = 'a' if os.path.exists(self.generated_file_path) else 'w'
@@ -127,7 +160,7 @@ if __name__ == '__main__':
     try:
         generator = HiddenCostsGenerator(map_file_path, generated_file_path)
 	generator.initialize()
-        generator.generate_yaml_file(3, 3)
+        generator.generate_yaml_file(9, 9)
 
     except rospy.ROSInterruptException:
         pass
