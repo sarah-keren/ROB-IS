@@ -18,6 +18,9 @@ find_package(catkin REQUIRED COMPONENTS
   rosplan_interface_mapping
   grid_map_msgs
   grid_map_ros
+  eigen_conversions
+  eigen_stl_containers
+  rviz_visual_tools
 )
 
 catkin_package()

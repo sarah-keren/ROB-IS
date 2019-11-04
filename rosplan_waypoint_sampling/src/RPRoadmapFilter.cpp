@@ -25,7 +25,7 @@ namespace KCL_rosplan {
         nh_.param<int>("srv_timeout", srv_timeout_, 3.0);
         nh_.param<int>("waypoint_count", waypoint_count_, 10);
         nh_.param<std::string>("wp_namespace_input", wp_namespace_input_, "/rosplan_demo_waypoints");
-        nh_.param<std::string>("wp_namespace_output", wp_namespace_output_, "/filtered_waypoints");
+        nh_.param<std::string>("wp_namespace_output", wp_namespace_output_, "/task_planning_waypoints");
         nh_.param<std::string>("wp_reference_frame", wp_reference_frame_, "map");
         nh_.param<std::string>("rosplan_kb_name", rosplan_kb_name, "rosplan_knowledge_base");
         nh_.param<std::string>("costmap_topic", costmap_topic_, "costmap_topic");
@@ -38,13 +38,14 @@ namespace KCL_rosplan {
 
         // publications of this node (for visualisation purposes), waypoints and connectivity information (edges)
         waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz/waypoints", 10, true);
+        visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("map","viz/labels"));
 
         // publications of the modified probability map
         // probability_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("viz/probability", 10, true);
         probability_pub_ = nh_.advertise<grid_map_msgs::GridMap>("grid_map", 1, true);
 
         // services offered by this node, create random wp (create prm), add single wp, remove a waypoint
-        filter_waypoint_service_server_ = nh_.advertiseService("filter_waypoints",&RPRoadmapFilter::filterRoadmap, this);
+        filter_waypoint_service_server_ = nh_.advertiseService("sample_waypoints",&RPRoadmapFilter::filterRoadmap, this);
 
         // services required by this node, to update rosplan KB and to query map from server
         std::stringstream ss;
@@ -201,6 +202,9 @@ namespace KCL_rosplan {
                 wp_weight.push_back(map.data[index]);
             }
 
+            // if all remaining waypoints have 0 probability, sample them randomly
+            if(w_sum==0) w_sum = 1;
+
             // sample one waypoint
             double sample =  rand() % w_sum;
             int counter = 0;
@@ -211,7 +215,6 @@ namespace KCL_rosplan {
             int sampled_wp_id = unsampled_waypoint_ids_[counter];
             unsampled_waypoint_ids_.erase(unsampled_waypoint_ids_.begin() + counter);
             sampled_waypoint_ids_.push_back(sampled_wp_id);
-
             std::stringstream ss;
             ss << "wp" << (sampled_waypoint_ids_.size()-1);
             uploadWPToParamServer(ss.str(), waypoints_[sampled_wp_id]);
@@ -231,9 +234,10 @@ namespace KCL_rosplan {
             }}
 
             // publish probability map
-            ros::Rate loopRate(0.5);
+
             if(animate_sampling_) {
 
+                ros::Rate loopRate(0.5);
                 // visualise
                 clearWPGraph();
                 pubWPGraph();
@@ -249,7 +253,6 @@ namespace KCL_rosplan {
 
                 probability_pub_.publish(gridMapMessage);
 
-                std::cout << "looping; sampled: " << sampled_waypoint_ids_.size() << std::endl;
                 ros::spinOnce();
                 loopRate.sleep();
             }
@@ -263,6 +266,7 @@ namespace KCL_rosplan {
         // upload to KB
         updateKB();
 
+        res.success = true;
         return true;
     }
 
@@ -288,7 +292,17 @@ namespace KCL_rosplan {
         std::vector<int>::iterator sit = sampled_waypoint_ids_.begin();
         for (; sit!=sampled_waypoint_ids_.end(); sit++) {
 
-            
+            Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+            pose.translation().x() += waypoints_[*sit].pose.position.x;
+            pose.translation().y() += waypoints_[*sit].pose.position.y;
+            pose.translation().y() += 0.5f;
+            geometry_msgs::Vector3 text_scale;
+            text_scale.x = 0.5;
+            text_scale.y = 0.5;
+            text_scale.z = 0.5;
+            std::stringstream ss;
+            ss << "wp" << count;
+            visual_tools_->publishText(pose, ss.str(), rviz_visual_tools::WHITE, text_scale, false);//rviz_visual_tools::XXXLARGE, false);
 
             visualization_msgs::Marker node_marker;
             node_marker.header.stamp = ros::Time();
@@ -310,6 +324,7 @@ namespace KCL_rosplan {
             count++;
         }
         waypoints_pub_.publish(marker_array);
+        visual_tools_->trigger();            
     }
 
     // clears all waypoints and edges

@@ -33,6 +33,8 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <grid_map_ros/GridMapRosConverter.hpp>
 #include <grid_map_msgs/GridMap.h>
+#include <rviz_visual_tools/rviz_visual_tools.h>
+
 
 #ifndef KCL_rp_roadmap_filter
 #define KCL_rp_roadmap_filter
@@ -90,6 +92,7 @@ namespace KCL_rosplan {
         /// topics that this node offers
         ros::Publisher waypoints_pub_; // for visualisation purposes
         ros::Publisher probability_pub_; // for visualisation purposes
+        rviz_visual_tools::RvizVisualToolsPtr visual_tools_;
         /// services that this node will query
         ros::ServiceClient update_kb_client_, update_kb_client_array_;
         /// services that are offered by this node
