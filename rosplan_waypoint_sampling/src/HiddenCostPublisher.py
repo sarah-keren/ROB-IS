@@ -70,9 +70,14 @@ class HiddenCostMap:
             for y in range(grid.info.height):
                 for x in range(grid.info.width):
                     cost = 0
-                    for (posx, posy, r, std_dev) in self.doughnuts:
+                    #for (posx, posy, r, std_dev) in self.doughnuts:
+                    for elem in self.doughnuts:
+                        posx = elem['x']; posy = elem['y']; r = elem['radius']; std_dev = elem['std_dev']
                         cost += self._doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev) / len(self.doughnuts)
-                    for (posx, posy, r, a, al, std_dev) in self.bananas:
+                    #for (posx, posy, r, a, al, std_dev) in self.bananas:
+                    for elem in self.bananas:
+                        posx = elem['x']; posy = elem['y']; r = elem['radius']; a = elem['angle']; al = elem['arclen']
+                        std_dev = elem['std_dev']
                         cost += self._banana((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), a, al, r, std_dev) / (len(self.bananas) + len(self.doughnuts))
                     if cost > maxc:
                         maxc = cost
