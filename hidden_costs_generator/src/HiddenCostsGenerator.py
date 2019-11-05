@@ -7,14 +7,13 @@ import yaml
 import cv2 
 import random
 
-
 # taken from https://stackabuse.com/reading-and-writing-yaml-to-a-file-in-python/
 
 #Generate yaml files that contain information about the hidden costs 
 class HiddenCostsGenerator:
 
-    def __init__(self, map_file_path, generated_file_path):
-        self.map_file_path = map_file_path
+    def __init__(self, map_yaml_file_path, generated_file_path):
+        self.map_yaml_file_path = map_yaml_file_path
         self.generated_file_path = generated_file_path
         rospy.loginfo("HiddenCostsGenerator initialized")
         self.index = 0
@@ -22,15 +21,21 @@ class HiddenCostsGenerator:
         self.map_width = 0  
         self.resolution = 0
         self.map_file_info = None
+        self.map_image_path = None
 
 
     def initialize(self):
-        with open(r'%s'%self.map_file_path) as map_file:
-            self.map_file_info = yaml.full_load(map_file)
+
+        with open(r'%s'%self.map_yaml_file_path) as map_yaml_file:
+            self.map_file_info = yaml.full_load(map_yaml_file)
             print('map_file_info:')
             print(self.map_file_info)
+	    relative_map_image_path = self.map_file_info['image']
+            map_dir = os.path.dirname(self.map_yaml_file_path)
+	    self.map_image_path = os.path.join(map_dir,relative_map_image_path) 	    
+	      	
         
-        self.map_img = cv2.imread(self.map_file_info['image']) 
+        self.map_img = cv2.imread(self.map_image_path) 
         [height, width, channels] = self.map_img.shape
         print('image info')
         print([height, width, channels])
@@ -128,14 +133,13 @@ class HiddenCostsGenerator:
             print('point_RGB_value:')
             print(point_RGB_value)
             #point_prob_value = point_RGB_value[0]+point_RGB_value[1]+point_RGB_value[2]/255 #(R+G+B)/255
-            val_avg = (point_RGB_value[0]+point_RGB_value[1]+point_RGB_value[2])/3
+            val_avg = (int(point_RGB_value[0])+int(point_RGB_value[1])+int(point_RGB_value[2]))/3
             #occ = (255 - color_avg) / 255.0;
             point_prob_value = (255 - val_avg )/255.0 
         
             print('point_prob_value:')        
             print(point_prob_value)
-            #if point_prob_value < self.map_file_info['free_thresh']:
-            if point_prob_value < 0.8:#self.map_file_info['free_thresh']:
+            if point_prob_value < self.map_file_info['free_thresh']:
                 is_in_collision = False
             else:
                 print("found a collision in cell (%d,%d)- resampling"%(row_val_pixel, col_val_pixel))        
@@ -157,10 +161,12 @@ if __name__ == '__main__':
     rospy.init_node('hidden_costs_generator')
     map_file_path = sys.argv[1]        
     generated_file_path = sys.argv[2]        
+
+
     try:
         generator = HiddenCostsGenerator(map_file_path, generated_file_path)
         generator.initialize()
-        generator.generate_yaml_file(9, 9)
+        generator.generate_yaml_file(5, 19)
 
     except rospy.ROSInterruptException:
         pass
