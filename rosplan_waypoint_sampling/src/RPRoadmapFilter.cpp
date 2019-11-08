@@ -6,6 +6,7 @@
  * Maintainer: Michael Cashmore (michael.cashmore@kcl.ac.uk)
  */
 
+#include <queue>
 #include "rosplan_interface_mapping/RPRoadmapFilter.h"
 
 namespace KCL_rosplan {
@@ -55,6 +56,9 @@ namespace KCL_rosplan {
         ss << "/" << rosplan_kb_name << "/update_array";
         update_kb_client_array_ = nh_.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
+        // Get waypoints
+
+
         ROS_INFO("KCL: (%s) Ready to receive.", ros::this_node::getName().c_str());
     }
 
@@ -88,7 +92,7 @@ namespace KCL_rosplan {
         // get all waypoints under a namespace
         XmlRpc::XmlRpcValue waypoints;
         std::string wp_reference_frame;
-        if(nh_.getParam(wp_namespace_input_, waypoints)){
+        if(nh_.getParam(wp_namespace_input_+"/wp", waypoints)){
             if(waypoints.getType() == XmlRpc::XmlRpcValue::TypeStruct){
                 for(auto wit=waypoints.begin(); wit!=waypoints.end(); wit++) {
                     if(wit->second.getType() == XmlRpc::XmlRpcValue::TypeString) {
@@ -134,7 +138,7 @@ namespace KCL_rosplan {
                                 return false;
                             }
                         }
-                        // add symbolic wp to KB and store in memoryf
+                        // add symbolic wp to KB and store in memory
                         // convert wp to PoseStamped
                         ROS_ASSERT(waypoint.size() == 3);
                         geometry_msgs::PoseStamped wp_as_pose;
@@ -164,6 +168,23 @@ namespace KCL_rosplan {
         else{
             ROS_ERROR("KCL: (%s) Parameters exist but still failed to load them", ros::this_node::getName().c_str());
             return false;
+        }
+
+        // Get edges
+        int N = waypoints_.size();
+        //dist_matrix = std::vector<std::vector<float>>(N, std::vector<float>(N, FLT_MAX));
+        adj_matrix = std::vector<std::vector<std::pair<int, float>>>(N);
+        XmlRpc::XmlRpcValue edges;
+        if(nh_.getParam(wp_namespace_input_+"/edge", edges)){
+            for (auto it = edges.begin(); it != edges.end(); ++it) {
+                int src = extract_id(it->first);
+                for (auto wpit=it->second.begin(); wpit != it->second.end(); ++wpit) {
+                    int i = extract_id(wpit->first);
+                    //dist_matrix[src][i] = static_cast<double>(wpit->second);
+                    //adj_matrix[src].push_back(i);
+                    adj_matrix[src].push_back(std::make_pair(i, static_cast<double>(wpit->second)));
+                }
+            }
         }
 
         return true;
@@ -265,6 +286,7 @@ namespace KCL_rosplan {
 
         // upload to KB
         updateKB();
+        initializeDistancesKB();
 
         res.success = true;
         return true;
@@ -384,11 +406,98 @@ namespace KCL_rosplan {
         }
     }
 
+    void RPRoadmapFilter::initializeDistancesKB() {
+        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
+        rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updateFuncSrv;
+        bool set_connected = true;
+
+        for (auto ait = sampled_waypoint_ids_.begin(); ait != sampled_waypoint_ids_.end(); ait++) {
+            for (auto bit = sampled_waypoint_ids_.begin(); bit != sampled_waypoint_ids_.end(); bit++) {
+                double dist = 0;
+                if (*ait != *bit) dist = dijkstra(*ait, *bit);
+                //std::cout << "distance " << *ait << " - " << *bit << " = " << dist << std::endl;
+
+                // Upload distance
+                rosplan_knowledge_msgs::KnowledgeItem item;
+
+                item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FUNCTION;
+                item.attribute_name = "distance";
+                diagnostic_msgs::KeyValue pairFrom;
+                pairFrom.key = "wp1";
+                pairFrom.value = "wp"+std::to_string(*ait);
+                item.values.push_back(pairFrom);
+                diagnostic_msgs::KeyValue pairTo;
+                pairTo.key = "wp2";
+                pairTo.value = "wp"+std::to_string(*bit);
+                item.values.push_back(pairTo);
+                item.function_value = dist;
+
+                updateFuncSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+                updateFuncSrv.request.knowledge.push_back(item);
+
+                // Update connected
+                if (set_connected) {
+                    rosplan_knowledge_msgs::KnowledgeItem item;
+
+                    item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
+                    item.attribute_name = "connected";
+                    diagnostic_msgs::KeyValue pairFrom;
+                    pairFrom.key = "from";
+                    pairFrom.value = "wp"+std::to_string(*ait);
+                    item.values.push_back(pairFrom);
+                    diagnostic_msgs::KeyValue pairTo;
+                    pairTo.key = "to";
+                    pairTo.value = "wp"+std::to_string(*bit);
+                    item.values.push_back(pairTo);
+
+                    updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+                    updatePredSrv.request.knowledge.push_back(item);
+                }
+            }
+        }
+
+        // service calls
+        if(!update_kb_client_array_.call(updatePredSrv))
+            ROS_INFO("KCL: (%s) Failed to call update service.", ros::this_node::getName().c_str());
+        if(!update_kb_client_array_.call(updateFuncSrv))
+            ROS_INFO("KCL: (%s) Failed to call update service.", ros::this_node::getName().c_str());
+    }
+
+    std::vector<float> RPRoadmapFilter::dijkstra_comp::distance = std::vector<float>();
+    double RPRoadmapFilter::dijkstra(int a, int b) { //a source, b target
+        int N = waypoints_.size();
+        dijkstra_comp c;
+        RPRoadmapFilter::dijkstra_comp::distance = std::vector<float>(N, FLT_MAX);
+
+        std::priority_queue<int, std::vector<int>, RPRoadmapFilter::dijkstra_comp> Q;
+        RPRoadmapFilter::dijkstra_comp::distance[a] = 0;
+        Q.push(a);
+
+        while (not Q.empty()) {
+            int u = Q.top();
+            if (u == b) return RPRoadmapFilter::dijkstra_comp::distance[u];
+            Q.pop();
+            for (auto it = adj_matrix[u].begin() ; it != adj_matrix[u].end() ; ++it) { //forall neighbours
+                double nd = RPRoadmapFilter::dijkstra_comp::distance[u] + it->second;
+                if (nd < RPRoadmapFilter::dijkstra_comp::distance[it->first]) {
+                    RPRoadmapFilter::dijkstra_comp::distance[it->first] = nd;
+                    Q.push(it->first);
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    int RPRoadmapFilter::extract_id(const std::string &id) { // assumed id of the form wpXXX
+        return std::stoi(id.substr(2));
+    }
+
 } // close namespace
 
 int main(int argc, char **argv) {
 
-    ros::init(argc, argv, "rosplan_roadmap_filter");
+    ros::init(argc, argv, "waypoint_sampler");
     KCL_rosplan::RPRoadmapFilter rms;
     ros::spin();
     return 0;

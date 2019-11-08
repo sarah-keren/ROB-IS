@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
+#include <regex>
 
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
@@ -84,6 +85,7 @@ namespace KCL_rosplan {
 
         /// Update KB function
         void updateKB();
+        void initializeDistancesKB();
 
         /// manage communication of this node and the ROS network
         ros::NodeHandle nh_;
@@ -112,6 +114,16 @@ namespace KCL_rosplan {
         std::vector<int> sampled_waypoint_ids_;
         std::vector<int> unsampled_waypoint_ids_;
         int waypoint_count_;
+
+        std::vector<std::vector<std::pair<int, float>>> adj_matrix;
+        struct dijkstra_comp { /// used by dijkstra method
+            static std::vector<float> distance;
+            bool operator() (const int& a, const int& b) {
+                return distance[a] < distance[b];
+            }
+        };
+        double dijkstra(int a, int b); // Distance between waypoint a and waypoint b
+        static int extract_id(const std::string& id);
 
         // probability shapes
         double minimum_radius_;
