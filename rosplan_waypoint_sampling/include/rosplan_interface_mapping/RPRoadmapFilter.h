@@ -66,7 +66,7 @@ namespace KCL_rosplan {
          * @param wp_id string that identifies uniquely the waypoint
          * @param pose x, y, theta coordinates and reference frame of the waypoint encoded as pose stamped msg
          */
-        void uploadWPToParamServer(std::string wp_id, geometry_msgs::PoseStamped pose);
+        void uploadWPToParamServer(const std::string &wp_id, const geometry_msgs::PoseStamped &waypoint);
 
         /**
          * @brief Callback function provided by this server node, when user makes a request to generate a roadmap
@@ -110,18 +110,22 @@ namespace KCL_rosplan {
         int srv_timeout_;
 
         /// Roadmap
+        std::map<int,int> wp_id_to_index_map_;
         std::vector<geometry_msgs::PoseStamped> waypoints_;
         std::vector<int> sampled_waypoint_ids_;
         std::vector<int> unsampled_waypoint_ids_;
         int waypoint_count_;
 
-        std::vector<std::vector<std::pair<int, float>>> adj_matrix;
+        std::map<int,std::map<int, float>> adj_matrix;
         struct dijkstra_comp { /// used by dijkstra method
+            public:
             static std::vector<float> distance;
             bool operator() (const int& a, const int& b) {
-                return distance[a] < distance[b];
+                // in a priority queue the highest element is removed first
+                return distance[a] > distance[b];
             }
         };
+
         double dijkstra(int a, int b); // Distance between waypoint a and waypoint b
         static int extract_id(const std::string& id);
 

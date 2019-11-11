@@ -92,6 +92,7 @@ namespace KCL_rosplan {
         // get all waypoints under a namespace
         XmlRpc::XmlRpcValue waypoints;
         std::string wp_reference_frame;
+        wp_id_to_index_map_.clear();
         if(nh_.getParam(wp_namespace_input_+"/wp", waypoints)){
             if(waypoints.getType() == XmlRpc::XmlRpcValue::TypeStruct){
                 for(auto wit=waypoints.begin(); wit!=waypoints.end(); wit++) {
@@ -138,6 +139,11 @@ namespace KCL_rosplan {
                                 return false;
                             }
                         }
+
+                        // remember index of this ID
+                        int paramid = extract_id(wp_id);
+                        wp_id_to_index_map_[paramid] = waypoints_.size();
+
                         // add symbolic wp to KB and store in memory
                         // convert wp to PoseStamped
                         ROS_ASSERT(waypoint.size() == 3);
@@ -152,7 +158,6 @@ namespace KCL_rosplan {
                         wp_as_pose.pose.orientation.y = q[1];
                         wp_as_pose.pose.orientation.z = q[2];
                         wp_as_pose.pose.orientation.w = q[3];
-
                         waypoints_.push_back(wp_as_pose);
                     }
                     else {
@@ -173,16 +178,19 @@ namespace KCL_rosplan {
         // Get edges
         int N = waypoints_.size();
         //dist_matrix = std::vector<std::vector<float>>(N, std::vector<float>(N, FLT_MAX));
-        adj_matrix = std::vector<std::vector<std::pair<int, float>>>(N);
+        adj_matrix.clear();
         XmlRpc::XmlRpcValue edges;
         if(nh_.getParam(wp_namespace_input_+"/edge", edges)){
             for (auto it = edges.begin(); it != edges.end(); ++it) {
-                int src = extract_id(it->first);
+
+                int src = wp_id_to_index_map_[extract_id(it->first)];
+                std::map<int,float> adjMap;
+                adj_matrix[src];
+
                 for (auto wpit=it->second.begin(); wpit != it->second.end(); ++wpit) {
-                    int i = extract_id(wpit->first);
-                    //dist_matrix[src][i] = static_cast<double>(wpit->second);
-                    //adj_matrix[src].push_back(i);
-                    adj_matrix[src].push_back(std::make_pair(i, static_cast<double>(wpit->second)));
+                    int i = wp_id_to_index_map_[extract_id(wpit->first)];
+                    adjMap[i] = static_cast<double>(wpit->second);
+                    adj_matrix[src] = adjMap;
                 }
             }
         }
@@ -234,6 +242,7 @@ namespace KCL_rosplan {
                 if(sample > 0) counter++;
             }
             int sampled_wp_id = unsampled_waypoint_ids_[counter];
+
             unsampled_waypoint_ids_.erase(unsampled_waypoint_ids_.begin() + counter);
             sampled_waypoint_ids_.push_back(sampled_wp_id);
             std::stringstream ss;
@@ -245,17 +254,17 @@ namespace KCL_rosplan {
             int cell_y = (int) (waypoints_[sampled_wp_id].pose.position.y/map.info.resolution);
             for(int x = cell_x - minimum_radius_/map.info.resolution; x < cell_x + minimum_radius_/map.info.resolution; x++) {
             for(int y = cell_y - minimum_radius_/map.info.resolution; y < cell_y + minimum_radius_/map.info.resolution; y++) {
+                if(x<0 || x>=map.info.width) continue;
+                if(y<0 || y>=map.info.height) continue;
                 double d = (x-cell_x)*map.info.resolution * (x-cell_x)*map.info.resolution;
                 d = d + (y-cell_y)*map.info.resolution * (y-cell_y)*map.info.resolution;
                 if(d < minimum_radius_ * minimum_radius_) { 
                     int index =  x + y*map.info.width;
                     map.data[index] = 0;
                 }
-
             }}
 
             // publish probability map
-
             if(animate_sampling_) {
 
                 ros::Rate loopRate(0.5);
@@ -292,7 +301,7 @@ namespace KCL_rosplan {
         return true;
     }
 
-    void RPRoadmapFilter::uploadWPToParamServer(std::string wp_id, geometry_msgs::PoseStamped waypoint) {
+    void RPRoadmapFilter::uploadWPToParamServer(const std::string &wp_id, const geometry_msgs::PoseStamped &waypoint) {
 
         // get theta from quaternion
         double roll, pitch, yaw;
@@ -302,7 +311,9 @@ namespace KCL_rosplan {
         pose_as_array.push_back(waypoint.pose.position.x);
         pose_as_array.push_back(waypoint.pose.position.y);
         pose_as_array.push_back(yaw);
-        nh_.setParam(wp_namespace_output_ + "/" + wp_id, pose_as_array);
+        std::stringstream ss;
+        ss << wp_namespace_output_ << "/" << wp_id;
+        nh_.setParam(ss.str(), pose_as_array);
     }
 
     void RPRoadmapFilter::pubWPGraph() {
@@ -407,15 +418,19 @@ namespace KCL_rosplan {
     }
 
     void RPRoadmapFilter::initializeDistancesKB() {
+
         rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
         rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updateFuncSrv;
-        bool set_connected = true;
+        bool set_connected = false;
 
-        for (auto ait = sampled_waypoint_ids_.begin(); ait != sampled_waypoint_ids_.end(); ait++) {
-            for (auto bit = sampled_waypoint_ids_.begin(); bit != sampled_waypoint_ids_.end(); bit++) {
+        //for (auto ait = sampled_waypoint_ids_.begin(); ait != sampled_waypoint_ids_.end(); ait++) {
+            //for (auto bit = sampled_waypoint_ids_.begin(); bit != sampled_waypoint_ids_.end(); bit++) {
+        for (int a=0; a<sampled_waypoint_ids_.size(); a++) {
+            for (int b=a+1; b<sampled_waypoint_ids_.size(); b++) {
+
                 double dist = 0;
-                if (*ait != *bit) dist = dijkstra(*ait, *bit);
-                //std::cout << "distance " << *ait << " - " << *bit << " = " << dist << std::endl;
+                if (sampled_waypoint_ids_[a] != sampled_waypoint_ids_[b])
+                    dist = dijkstra(sampled_waypoint_ids_[a], sampled_waypoint_ids_[b]);
 
                 // Upload distance
                 rosplan_knowledge_msgs::KnowledgeItem item;
@@ -423,14 +438,24 @@ namespace KCL_rosplan {
                 item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FUNCTION;
                 item.attribute_name = "distance";
                 diagnostic_msgs::KeyValue pairFrom;
-                pairFrom.key = "wp1";
-                pairFrom.value = "wp"+std::to_string(*ait);
+                pairFrom.key = "a";
+                pairFrom.value = "wp"+std::to_string(a);
                 item.values.push_back(pairFrom);
                 diagnostic_msgs::KeyValue pairTo;
-                pairTo.key = "wp2";
-                pairTo.value = "wp"+std::to_string(*bit);
+                pairTo.key = "b";
+                pairTo.value = "wp"+std::to_string(b);
                 item.values.push_back(pairTo);
                 item.function_value = dist;
+
+                updateFuncSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+                updateFuncSrv.request.knowledge.push_back(item);
+
+                // upload distance in other direction 
+                item.values.clear();
+                pairFrom.value = "wp"+std::to_string(b);
+                item.values.push_back(pairFrom);
+                pairTo.value = "wp"+std::to_string(a);
+                item.values.push_back(pairTo);
 
                 updateFuncSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
                 updateFuncSrv.request.knowledge.push_back(item);
@@ -443,11 +468,11 @@ namespace KCL_rosplan {
                     item.attribute_name = "connected";
                     diagnostic_msgs::KeyValue pairFrom;
                     pairFrom.key = "from";
-                    pairFrom.value = "wp"+std::to_string(*ait);
+                    pairFrom.value = "wp"+std::to_string(a);
                     item.values.push_back(pairFrom);
                     diagnostic_msgs::KeyValue pairTo;
                     pairTo.key = "to";
-                    pairTo.value = "wp"+std::to_string(*bit);
+                    pairTo.value = "wp"+std::to_string(b);
                     item.values.push_back(pairTo);
 
                     updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
@@ -463,14 +488,15 @@ namespace KCL_rosplan {
             ROS_INFO("KCL: (%s) Failed to call update service.", ros::this_node::getName().c_str());
     }
 
+
     std::vector<float> RPRoadmapFilter::dijkstra_comp::distance = std::vector<float>();
     double RPRoadmapFilter::dijkstra(int a, int b) { //a source, b target
+
         int N = waypoints_.size();
-        dijkstra_comp c;
-        RPRoadmapFilter::dijkstra_comp::distance = std::vector<float>(N, FLT_MAX);
+        RPRoadmapFilter::dijkstra_comp::distance = std::vector<float>(N, FLT_MAX);        
+        RPRoadmapFilter::dijkstra_comp::distance[a] = 0;
 
         std::priority_queue<int, std::vector<int>, RPRoadmapFilter::dijkstra_comp> Q;
-        RPRoadmapFilter::dijkstra_comp::distance[a] = 0;
         Q.push(a);
 
         while (not Q.empty()) {
@@ -485,7 +511,6 @@ namespace KCL_rosplan {
                 }
             }
         }
-
         return -1;
     }
 

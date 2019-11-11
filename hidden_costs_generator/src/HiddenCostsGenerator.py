@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import rospy
 import math  
 import sys, os
 from nav_msgs.msg import OccupancyGrid
@@ -15,7 +14,6 @@ class HiddenCostsGenerator:
     def __init__(self, map_yaml_file_path, generated_file_path):
         self.map_yaml_file_path = map_yaml_file_path
         self.generated_file_path = generated_file_path
-        rospy.loginfo("HiddenCostsGenerator initialized")
         self.index = 0
         self.map_height = 0 
         self.map_width = 0  
@@ -28,17 +26,13 @@ class HiddenCostsGenerator:
 
         with open(r'%s'%self.map_yaml_file_path) as map_yaml_file:
             self.map_file_info = yaml.full_load(map_yaml_file)
-            print('map_file_info:')
-            print(self.map_file_info)
+
 	    relative_map_image_path = self.map_file_info['image']
-            map_dir = os.path.dirname(self.map_yaml_file_path)
-	    self.map_image_path = os.path.join(map_dir,relative_map_image_path) 	    
-	      	
+        map_dir = os.path.dirname(self.map_yaml_file_path)
+        self.map_image_path = os.path.join(map_dir,relative_map_image_path) 	    
         
         self.map_img = cv2.imread(self.map_image_path) 
         [height, width, channels] = self.map_img.shape
-        print('image info')
-        print([height, width, channels])
         self.map_height = height
         self.map_width = width
         self.resolution = self.map_file_info['resolution']
@@ -51,20 +45,15 @@ class HiddenCostsGenerator:
         print('doughnuts:')
         print(doughnuts)
 
-        print('bananas:')
-        print(bananas)
-        
         objects_dict = {}
         objects_dict['doughnuts'] = doughnuts
         objects_dict['bananas'] = bananas
-
-        print(objects_dict)
 
         # populate file  
         mode = 'w+' if os.path.exists(self.generated_file_path) else 'w'
         with open(self.generated_file_path, mode) as yaml_file:
             objects = yaml.dump(objects_dict,yaml_file)
-        yaml_file.close()
+            yaml_file.close()
 
         print('completed generate_yaml_file')
 
@@ -98,6 +87,7 @@ class HiddenCostsGenerator:
         #return [p, c, angle, arclen, mu, sigma]
         object_dict= {'name': 'banana_%d'%self.index, 'x': p, 'y': c, 'radius': mu, 'angle': angle,  'arclen': arclen, 'std_dev': sigma, 'type': 'banana'}
         return object_dict
+
     # p, c, mu, sigma
     def generate_doughnut(self, reference_point):
         self.index += 1
@@ -118,18 +108,19 @@ class HiddenCostsGenerator:
         y_val_pixel = -1        
         y_val = -1
         while is_in_collision:
+
             #column   
-            col_val_pixel = random.randint(1,self.map_width-1)
-            col_val = col_val_pixel*self.resolution
-            col_val = round(col_val,2)
+            cell_x = random.randint(1,self.map_width-1)
+            map_x = cell_x*self.resolution
+            map_x = round(map_x,2)
 
             #row
-            row_val_pixel = random.randint(1,self.map_height-1)
-            row_val = row_val_pixel*self.resolution
-            row_val = round(row_val,2)
+            cell_y = random.randint(1,self.map_height-1)
+            map_y = cell_y*self.resolution
+            map_y = round(map_y,2)
             
             #check for collisions        
-            point_RGB_value = self.map_img[row_val_pixel,col_val_pixel]
+            point_RGB_value = self.map_img[cell_y,cell_x]
             print('point_RGB_value:')
             print(point_RGB_value)
             #point_prob_value = point_RGB_value[0]+point_RGB_value[1]+point_RGB_value[2]/255 #(R+G+B)/255
@@ -142,31 +133,18 @@ class HiddenCostsGenerator:
             if point_prob_value < self.map_file_info['free_thresh']:
                 is_in_collision = False
             else:
-                print("found a collision in cell (%d,%d)- resampling"%(row_val_pixel, col_val_pixel))        
+                print("found a collision in cell (%d,%d)- resampling"%(cell_y, cell_x))        
 
-        return [row_val, col_val] 
-        
-#    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas):
-#        mode = 'a' if os.path.exists(self.generated_file_path) else 'w'
-#        object_dict= {'name': 'Silenthand Olleander', 'race': 'Human','traits': ['ONE_HAND', 'ONE_EYE']}
-#       with open(self.generated_file_path, mode) as yaml_file:
-#            objects = yaml.dump(dict_,yaml_file)
-#            print(objects)
-#        yaml_file.close()
-#        print('completed generate_yaml_file')
-
+        return [map_x, map_y] 
 
 if __name__ == '__main__':
 
-    rospy.init_node('hidden_costs_generator')
     map_file_path = sys.argv[1]        
-    generated_file_path = sys.argv[2]        
+    generated_file_path = sys.argv[2]     
+    no_dougnuts = int(sys.argv[3])
+    no_bananas =  int(sys.argv[4])
 
+    generator = HiddenCostsGenerator(map_file_path, generated_file_path)
+    generator.initialize()
+    generator.generate_yaml_file(no_dougnuts, no_bananas)
 
-    try:
-        generator = HiddenCostsGenerator(map_file_path, generated_file_path)
-        generator.initialize()
-        generator.generate_yaml_file(5, 19)
-
-    except rospy.ROSInterruptException:
-        pass
