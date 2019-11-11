@@ -36,4 +36,6 @@ include_directories(
 
 # waypoint filter
 add_executable(rp_roadmap_filter src/RPRoadmapFilter.cpp)
+add_executable(rp_fixed_wp_gen src/RPFixedWaypointGenerator.cpp include/rosplan_interface_mapping/RPFixedWaypointGenerator.h)
 target_link_libraries(rp_roadmap_filter ${catkin_LIBRARIES})
+target_link_libraries(rp_fixed_wp_gen ${catkin_LIBRARIES})
