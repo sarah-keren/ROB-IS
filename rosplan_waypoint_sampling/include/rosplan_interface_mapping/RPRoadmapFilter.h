@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
+#include <time.h>
 #include <regex>
 
 #include <ros/ros.h>

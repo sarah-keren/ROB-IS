@@ -89,6 +89,17 @@ namespace KCL_rosplan {
             ros::spinOnce();
         }
 
+        // reset roadmap before loading
+        wp_id_to_index_map_.clear();
+        waypoints_.clear();
+        sampled_waypoint_ids_.clear();
+        unsampled_waypoint_ids_.clear();
+
+        if(!nh_.hasParam(wp_namespace_output_)) {
+            ROS_INFO("KCL: (%s) Old waypoints found in param server under namespace: %s (deleting now)", ros::this_node::getName().c_str(), wp_namespace_output_.c_str());
+            nh_.deleteParam(wp_namespace_output_);
+        }
+
         // get all waypoints under a namespace
         XmlRpc::XmlRpcValue waypoints;
         std::string wp_reference_frame;
@@ -213,6 +224,9 @@ namespace KCL_rosplan {
         sampled_waypoint_ids_.clear();
         unsampled_waypoint_ids_.clear();
         for(int i=0;i<waypoints_.size(); i++) unsampled_waypoint_ids_.push_back(i);
+
+        /* initialize random seed: */
+        srand (time(NULL));
 
         // begin sampling
         std::vector<int> wp_weight;
@@ -378,6 +392,8 @@ namespace KCL_rosplan {
         }
 
         waypoints_pub_.publish( marker_array );
+
+        visual_tools_->deleteAllMarkers();
     }
 
     void RPRoadmapFilter::updateKB() {
