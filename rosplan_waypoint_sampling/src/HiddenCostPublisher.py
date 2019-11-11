@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import math  
+from math import floor
 from itertools import product
 from nav_msgs.msg import OccupancyGrid
 
@@ -23,14 +24,40 @@ class HiddenCostMap:
     def set_map(self, msg):
         self._static_map = msg
 
+    def _static_map_cell(self, x, y):
+        gx = int((x - self._static_map.info.origin.position.x)/self._static_map.info.resolution)
+        gy = int((y - self._static_map.info.origin.position.y)/self._static_map.info.resolution)
+        return self._static_map.data[gx + gy*self._static_map.info.width]
+
+    def _sign(self, n):
+        return (n > 0) - (n < 0)
+
+    # return if there is a collision between points p and c
+    def _checkCollision(self, p, c):
+
+        (xA, yA) = (p[0], p[1])
+        (xB, yB) = (c[0], c[1])
+        (dx, dy) = (xB - xA, yB - yA)
+        sx = self._static_map.info.resolution * dx/(abs(dx)+abs(dy))
+        sy = self._static_map.info.resolution * dy/(abs(dx)+abs(dy))
+
+        while (sx == 0 or xA*self._sign(sx) < xB*self._sign(sx)) and (sy == 0 or yA*self._sign(sy) < yB*self._sign(sy)):
+            if self._static_map_cell(xA,yA) > 0.12:
+                return True
+            xA += sx
+            yA += sy
+        return False
+
     def _doughnut(self, p, c, mu, sigma):
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
         prob = math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
         return prob
 
-    def _uniform_doughnut(selfself, p, c, mu, sigma):
+    def _uniform_doughnut(self, p, c, mu, sigma):
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
-        return 100*(d > mu-2*sigma and d < mu+2*sigma)
+        if (d > mu-2*sigma and d < mu+2*sigma) and not self._checkCollision(p,c):
+                return 100
+        return 0
 
     def _banana(self, p, c, angle, arclen, mu, sigma):
         gamma = angle - arclen/2.0
@@ -107,30 +134,21 @@ class HiddenCostMap:
         while not rospy.is_shutdown() and not self._static_map:
             rospy.sleep(0.5)
 
-        rate = rospy.Rate(0.05)
+        rate = rospy.Rate(0.5)
         while not rospy.is_shutdown():
             grid = OccupancyGrid()
             grid.header.frame_id = "map"
             grid.info = self._static_map.info
 
-            maxc = 0
+            maxc = 1
             for y in range(grid.info.height):
                 for x in range(grid.info.width):
                     cost = 0
-                    #for (posx, posy, r, std_dev) in self.doughnuts:
                     for elem in self.doughnuts:
                         posx = elem['x']; posy = elem['y']; r = elem['radius']; std_dev = elem['std_dev']
-                        #cost += self._doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev) / len(self.doughnuts)
                         cost += self._uniform_doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev)
-
-                        #fd = self._uniform_doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev)
-                        #pd = self._doughnut((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev)
-                        #assert (pd> 0.01 and  fd > 0) or (fd == 0 and pd < 0.01)
-                    #for (posx, posy, r, a, al, std_dev) in self.bananas:
                     for elem in self.bananas:
-                        posx = elem['x']; posy = elem['y']; r = elem['radius']; a = elem['angle']; al = elem['arclen']
-                        std_dev = elem['std_dev']
-                        #cost += self._banana((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), a, al, r, std_dev) / (len(self.bananas) + len(self.doughnuts))
+                        posx = elem['x']; posy = elem['y']; r = elem['radius']; a = elem['angle']; al = elem['arclen']; std_dev = elem['std_dev']
                         cost += self._uniform_banana((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), a, al, r, std_dev)
                     if cost > maxc:
                         maxc = cost
