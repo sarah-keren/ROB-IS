@@ -198,6 +198,21 @@ namespace KCL_rosplan {
         return true;
     }
 
+    void RPFixedWaypointGenerator::uploadWPToParamServer(const std::string &wp_id, const geometry_msgs::PoseStamped &waypoint) {
+
+        // get theta from quaternion
+        double roll, pitch, yaw;
+        tf::Quaternion q(waypoint.pose.orientation.x, waypoint.pose.orientation.y, waypoint.pose.orientation.z, waypoint.pose.orientation.w);
+        tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+        std::vector<double> pose_as_array;
+        pose_as_array.push_back(waypoint.pose.position.x);
+        pose_as_array.push_back(waypoint.pose.position.y);
+        pose_as_array.push_back(yaw);
+        std::stringstream ss;
+        ss << wp_namespace_output_ << "/" << wp_id;
+        nh_.setParam(ss.str(), pose_as_array);
+    }
+
     void RPFixedWaypointGenerator::generate_wps(int starting_id) {
         for (auto it = _objects.begin(); it < _objects.end(); ++it) {
             bool connected = false;
@@ -219,7 +234,7 @@ namespace KCL_rosplan {
 
                 rosplan_interface_mapping::AddWaypoint awp;
                 wp_id = starting_id;
-                awp.request.id = "wp" + std::to_string( wp_id);
+                awp.request.id = "wp" + std::to_string(wp_id);
                 pose.header.frame_id = wp_reference_frame_;
                 pose.pose.position.x = coord.first;
                 pose.pose.position.y = coord.second;
@@ -233,6 +248,7 @@ namespace KCL_rosplan {
                 ++starting_id;
                 _generated_wps.push_back(std::make_pair(wp_id, pose));
                 waypoints_.push_back(pose);
+                uploadWPToParamServer("wp" + std::to_string(wp_id), pose);
             }
         }
     }

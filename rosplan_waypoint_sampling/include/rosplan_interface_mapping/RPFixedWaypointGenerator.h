@@ -42,6 +42,7 @@ namespace KCL_rosplan {
         std::vector<geometry_msgs::PoseStamped> waypoints_;
         ros::ServiceServer filter_waypoint_service_server_;
         bool generateWPSCb(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res);
+        void uploadWPToParamServer(const std::string &wp_id, const geometry_msgs::PoseStamped &waypoint);
 
         void generate_wps(int starting_id);
         bool loadParams();
