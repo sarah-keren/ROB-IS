@@ -24,8 +24,8 @@ namespace KCL_rosplan {
         ss << "/" << rosplan_kb_name << "/update_array";
         update_kb_client_array_ = nh_.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
-        waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("/waypoint_sampler/viz/waypoints", 10, true);
-        visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("map","/waypoint_sampler/viz/labels"));
+        waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz/waypoints", 10, true);
+        visual_tools_.reset(new rviz_visual_tools::RvizVisualTools("map","viz/labels"));
 
         // Load objects
         XmlRpc::XmlRpcValue objects;
@@ -380,7 +380,7 @@ namespace KCL_rosplan {
         visual_tools_->trigger();
     }
 
-    bool RPFixedWaypointGenerator::generateWPSCb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
+    bool RPFixedWaypointGenerator::generateWPSCb(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res) {
         ROS_INFO("KCL: (%s) Starting waypoint generation.", ros::this_node::getName().c_str());
         XmlRpc::XmlRpcValue waypoints;
         nh_.getParam(wp_namespace_input_+"/wp", waypoints);

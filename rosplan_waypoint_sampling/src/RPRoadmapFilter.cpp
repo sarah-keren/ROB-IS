@@ -102,7 +102,7 @@ namespace KCL_rosplan {
 
         // get all waypoints under a namespace
         XmlRpc::XmlRpcValue waypoints;
-        std::string wp_reference_frame;
+        std::string wp_reference_frame = wp_reference_frame_;
         wp_id_to_index_map_.clear();
         if(nh_.getParam(wp_namespace_input_+"/wp", waypoints)){
             if(waypoints.getType() == XmlRpc::XmlRpcValue::TypeStruct){
@@ -110,7 +110,7 @@ namespace KCL_rosplan {
                     if(wit->second.getType() == XmlRpc::XmlRpcValue::TypeString) {
                         ROS_INFO("KCL: (%s) parsing string parameter (wp reference frame)", ros::this_node::getName().c_str());
                         if(wit->first.c_str() == std::string("waypoint_frameid")) {
-                            std::string wp_reference_frame = static_cast<std::string>(wit->second);
+                            wp_reference_frame = static_cast<std::string>(wit->second);
                             ROS_INFO("KCL: (%s) Setting new waypoint reference frame : %s", ros::this_node::getName().c_str(), wp_reference_frame.c_str());
                         }
                         else {
