@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <stdlib.h>
+#include <time.h>
 #include <regex>
 
 #include <ros/ros.h>
@@ -28,6 +29,7 @@
 #include <rosplan_knowledge_msgs/KnowledgeItem.h>
 #include <rosplan_knowledge_msgs/KnowledgeUpdateService.h>
 #include <rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h>
+#include <rosplan_knowledge_msgs/SetInt.h>
 #include <occupancy_grid_utils/ray_tracer.h>
 #include <occupancy_grid_utils/coordinate_conversions.h>
 #include <std_srvs/Trigger.h>
@@ -74,7 +76,7 @@ namespace KCL_rosplan {
          * will generate the waypoints
          * @param res the response that we need to fill and provide to the user as feedback
          */
-        bool filterRoadmap(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+        bool filterRoadmap(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res);
 
       private:
 
