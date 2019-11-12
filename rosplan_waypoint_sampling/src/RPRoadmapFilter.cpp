@@ -95,7 +95,7 @@ namespace KCL_rosplan {
         sampled_waypoint_ids_.clear();
         unsampled_waypoint_ids_.clear();
 
-        if(!nh_.hasParam(wp_namespace_output_)) {
+        if(nh_.hasParam(wp_namespace_output_)) {
             ROS_INFO("KCL: (%s) Old waypoints found in param server under namespace: %s (deleting now)", ros::this_node::getName().c_str(), wp_namespace_output_.c_str());
             nh_.deleteParam(wp_namespace_output_);
         }
@@ -213,7 +213,7 @@ namespace KCL_rosplan {
     /* Filtering PRM */
     /*---------------*/
 
-    bool RPRoadmapFilter::filterRoadmap(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) {
+    bool RPRoadmapFilter::filterRoadmap(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res) {
 
         // check if wps are available in param server, if so, load them in symbolic KB and visualise them
         loadParams();
@@ -221,6 +221,7 @@ namespace KCL_rosplan {
         nav_msgs::OccupancyGrid map = cost_map_;
 
         // prepare ID lists
+        waypoint_count_ = req.value;
         sampled_waypoint_ids_.clear();
         unsampled_waypoint_ids_.clear();
         for(int i=0;i<waypoints_.size(); i++) unsampled_waypoint_ids_.push_back(i);
