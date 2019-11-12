@@ -19,6 +19,7 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/GetMap.h>
+#include <rosplan_knowledge_msgs/SetInt.h>
 
 namespace KCL_rosplan {
     struct Object {
@@ -40,7 +41,7 @@ namespace KCL_rosplan {
         std::map<int,int> wp_id_to_index_map_;
         std::vector<geometry_msgs::PoseStamped> waypoints_;
         ros::ServiceServer filter_waypoint_service_server_;
-        bool generateWPSCb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+        bool generateWPSCb(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res);
 
         void generate_wps(int starting_id);
         bool loadParams();
