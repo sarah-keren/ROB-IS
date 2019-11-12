@@ -210,7 +210,7 @@ namespace KCL_rosplan {
                 double rangle = ((double) rand() / (RAND_MAX)) * 2 * M_PI;
                 coord.first = it->x + (it->radius * cos(rangle));
                 coord.second = it->y + (it->radius * sin(rangle));
-                
+
                 if (not isVisible(coord, std::make_pair(it->x, it->y))) {
                     ++i;
                     ROS_WARN("KCL (%s) Generated a non visible waypoint (wp%d) !", ros::this_node::getName().c_str(), starting_id);
@@ -403,7 +403,8 @@ namespace KCL_rosplan {
         while (((sx == 0) or xA*sign(sx) < b.first*sign(sx)) and (sy == 0 or yA*sign(sy) < b.second*sign(sy))) {
             int gx = int((xA - _static_map.info.origin.position.x) / _static_map.info.resolution);
             int gy = int((yA - _static_map.info.origin.position.y) / _static_map.info.resolution);
-            if (_static_map.data[gx + gy * _static_map.info.width] > 0.12) return false;
+            if (gx > _static_map.info.width or gx < 0 or gy < 0 or gy >= _static_map.info.height or
+                _static_map.data[gx + gy * _static_map.info.width] > 0.12) return false;
             xA += sx;
             yA += sy;
         }
