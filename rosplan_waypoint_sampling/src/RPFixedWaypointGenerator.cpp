@@ -388,6 +388,10 @@ namespace KCL_rosplan {
         loadParams();
         initializeDistancesKB();
         pubWPGraph();
+        waypoints_.clear();
+        wp_id_to_index_map_.clear();
+        adj_matrix.clear();
+        _generated_wps.clear();
         ROS_INFO("KCL: (%s) Completed waypoint generation.", ros::this_node::getName().c_str());
         return true;
     }
