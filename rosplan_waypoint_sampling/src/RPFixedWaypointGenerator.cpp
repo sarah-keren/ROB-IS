@@ -213,7 +213,7 @@ namespace KCL_rosplan {
 
                 if (not isVisible(coord, std::make_pair(it->x, it->y))) {
                     ++i;
-                    ROS_WARN("KCL (%s) Generated a non visible waypoint!", ros::this_node::getName().c_str());
+                    ROS_WARN("KCL (%s) Generated a non visible waypoint (wp%d) !", ros::this_node::getName().c_str(), starting_id);
                     continue;
                 }
 
@@ -381,25 +381,26 @@ namespace KCL_rosplan {
     }
 
     bool RPFixedWaypointGenerator::generateWPSCb(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
+        ROS_INFO("KCL: (%s) Starting waypoint generation.", ros::this_node::getName().c_str());
         XmlRpc::XmlRpcValue waypoints;
         nh_.getParam(wp_namespace_input_+"/wp", waypoints);
         generate_wps(waypoints.size());
         loadParams();
         initializeDistancesKB();
         pubWPGraph();
+        ROS_INFO("KCL: (%s) Completed waypoint generation.", ros::this_node::getName().c_str());
         return true;
     }
 
     bool RPFixedWaypointGenerator::isVisible(const std::pair<double, double> &a, const std::pair<double, double> &b) {
         double xA = a.first;
         double yA = a.second;
-        double dx = xA - b.first;
-        double dy = yA - b.second;
+        double dx = b.first - xA;
+        double dy = b.second - yA;
         double sx = _static_map.info.resolution * dx/(std::abs(dx)+std::abs(dy));
         double sy = _static_map.info.resolution * dy/(abs(dx)+std::abs(dy));
 
-        while (((sx == 0) or xA*sign(sx) < b.first*sign(sx)) and (sy == 0 or yA*sign(sy) < b.second*sign(sy)))
-        {
+        while (((sx == 0) or xA*sign(sx) < b.first*sign(sx)) and (sy == 0 or yA*sign(sy) < b.second*sign(sy))) {
             int gx = int((xA - _static_map.info.origin.position.x) / _static_map.info.resolution);
             int gy = int((yA - _static_map.info.origin.position.y) / _static_map.info.resolution);
             if (_static_map.data[gx + gy * _static_map.info.width] > 0.12) return false;
