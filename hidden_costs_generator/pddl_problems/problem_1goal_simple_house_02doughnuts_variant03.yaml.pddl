@@ -5,7 +5,7 @@
     order_0 - order
 )
 (:init
-    (robot_at kenny wp0)
+
 
 
     (= (order_complete order_0) 0)
