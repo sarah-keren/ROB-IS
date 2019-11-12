@@ -215,6 +215,26 @@ namespace KCL_rosplan {
 
     bool RPRoadmapFilter::filterRoadmap(rosplan_knowledge_msgs::SetInt::Request &req, rosplan_knowledge_msgs::SetInt::Response &res) {
 
+        // clear previous roadmap from knowledge base
+        ROS_INFO("KCL: (%s) Cleaning old roadmap", ros::this_node::getName().c_str());
+
+        // clear waypoint instances from KB
+        rosplan_knowledge_msgs::KnowledgeUpdateService updateSrv;
+        updateSrv.request.update_type = rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE;
+        updateSrv.request.knowledge.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::INSTANCE;
+        updateSrv.request.knowledge.instance_type = "waypoint";
+
+        // wait for service existence
+        if(!update_kb_client_.waitForExistence(ros::Duration(srv_timeout_))) {
+            ROS_ERROR("KCL: (%s) Update KB service not found (%s)", ros::this_node::getName().c_str(), update_kb_client_.getService().c_str());
+            return false;
+        }
+
+        if(!update_kb_client_.call(updateSrv)) {
+            ROS_ERROR("KCL: (%s) Failed to call update service.", ros::this_node::getName().c_str());
+            return false;
+        }
+
         // check if wps are available in param server, if so, load them in symbolic KB and visualise them
         loadParams();
         ROS_INFO("KCL: (%s) Waypoints loaded", ros::this_node::getName().c_str());
