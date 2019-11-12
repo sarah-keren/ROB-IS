@@ -38,7 +38,8 @@ namespace KCL_rosplan {
                     for (auto it = objects[i].begin(); it != objects[i].end(); it++) {
                         if (it->first == "x") coord.x = it->second;
                         else if (it->first == "y") coord.y = it->second;
-                        else if (it->first == "std_dev") coord.stddev = it->second;
+                        else if (it->first == "std_dev") coord.std_dev = it->second;
+                        else if (it->first == "radius") coord.radius = it->second;
                     }
                     _objects.push_back(coord);
                 }
@@ -52,7 +53,8 @@ namespace KCL_rosplan {
                     for (auto it = objects[i].begin(); it != objects[i].end(); it++) {
                         if (it->first == "x") coord.x = it->second;
                         else if (it->first == "y") coord.y = it->second;
-                        else if (it->first == "std_dev") coord.stddev = it->second;
+                        else if (it->first == "std_dev") coord.std_dev = it->second;
+                        else if (it->first == "radius") coord.radius = it->second;
                     }
                     _objects.push_back(coord);
                 }
@@ -206,11 +208,9 @@ namespace KCL_rosplan {
             while (not connected and i < _MAX_ATT) {
 
                 double rangle = ((double) rand() / (RAND_MAX)) * 2 * M_PI;
-                coord.first = it->x + (2 * it->stddev * cos(rangle));
-                coord.second = it->y + (2 * it->stddev * sin(rangle));
-                /*std::cout << it->x << ", " << it->y << std::endl;
-                std::cout << coord.first << ", " << coord.second << std::endl;*/
-
+                coord.first = it->x + (it->radius * cos(rangle));
+                coord.second = it->y + (it->radius * sin(rangle));
+                
                 if (not isVisible(coord, std::make_pair(it->x, it->y))) {
                     ++i;
                     ROS_WARN("KCL (%s) Generated a non visible waypoint (wp%d) !", ros::this_node::getName().c_str(), starting_id);

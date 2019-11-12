@@ -22,7 +22,7 @@
 
 namespace KCL_rosplan {
     struct Object {
-        double x, y, stddev;
+        double x, y, radius, std_dev;
     };
 
     class RPFixedWaypointGenerator {
