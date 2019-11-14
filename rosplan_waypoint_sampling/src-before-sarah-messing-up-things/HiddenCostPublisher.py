@@ -18,9 +18,6 @@ class HiddenCostMap:
             self.doughnuts = rospy.get_param('~doughnuts')
         if rospy.has_param('~bananas'):
             self.bananas = rospy.get_param('~bananas')
-        self.hppits= []
-        if rospy.has_param('~hppit'):
-            self.hppits = rospy.get_param('~hppit')
 
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
 
@@ -61,12 +58,6 @@ class HiddenCostMap:
         if (d > mu-2*sigma and d < mu+2*sigma) and not self._checkCollision(p,c):
                 return 100
         return 0
-   
-    def _uniform_hppit(self, p, c, mu, sigma):
-        d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
-        if (d > mu-2*sigma and d < mu+2*sigma) and not self._checkCollision(p,c):
-                return 0
-        return 100
 
     def _banana(self, p, c, angle, arclen, mu, sigma):
         gamma = angle - arclen/2.0
@@ -126,7 +117,7 @@ class HiddenCostMap:
         # return 100*r
         return 0
 
-    def gen_costmap(self, preferences=False):
+    def gen_costmap(self):
 
         self.peaks = []
         self.doughnuts = []
@@ -159,34 +150,20 @@ class HiddenCostMap:
                     for elem in self.bananas:
                         posx = elem['x']; posy = elem['y']; r = elem['radius']; a = elem['angle']; al = elem['arclen']; std_dev = elem['std_dev']
                         cost += self._uniform_banana((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), a, al, r, std_dev)
-                    for elem in self.hppits:
-                        posx = elem['x']; posy = elem['y']; r = elem['radius']; std_dev = elem['std_dev']
-                        cost += self._uniform_hppit((x*grid.info.resolution, y*grid.info.resolution), (posx, posy), r, std_dev)
-
                     if cost > maxc:
                         maxc = cost
                     grid.data.append(cost)
 
             grid.data = map(lambda c: int(100.0*c/float(maxc)), grid.data)
-		
-            if preferences:
-                grid = self.add_preferences(grid)
-	    
-			
+
             self.costmap_pub.publish(grid)
             rate.sleep()
-
-    
-    def add_preferences(self,grid):
-	preference_grid = copy.deepcopy(grid)
-	
-	return preference_grid
 
 
 if __name__ == '__main__':
     rospy.init_node('hidden_costmap')
     try:
         h = HiddenCostMap()
-        h.gen_costmap(preferences=False)
+        h.gen_costmap()
     except rospy.ROSInterruptException:
         pass

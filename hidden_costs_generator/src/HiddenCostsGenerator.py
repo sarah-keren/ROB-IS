@@ -37,17 +37,15 @@ class HiddenCostsGenerator:
         self.map_width = width
         self.resolution = self.map_file_info['resolution']
 
-    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas):#, clusters_dimensions):
+    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas, num_of_hppits=0):#, clusters_dimensions):
         
         # populate the objects_dict
-        [doughnuts,bananas]= self.generate_objects(num_of_doughnuts, num_of_bananas)
+        [doughnuts,bananas, hppits]= self.generate_objects(num_of_doughnuts, num_of_bananas, num_of_hppits)
      
-        print('doughnuts:')
-        print(doughnuts)
-
         objects_dict = {}
         objects_dict['doughnuts'] = doughnuts
         objects_dict['bananas'] = bananas
+        objects_dict['hppits'] = hppits
 
         # populate file  
         mode = 'w+' if os.path.exists(self.generated_file_path) else 'w'
@@ -57,9 +55,10 @@ class HiddenCostsGenerator:
 
         print('completed generate_yaml_file')
 
-    def generate_objects(self, num_of_doughnuts, num_of_bananas):
+    def generate_objects(self, num_of_doughnuts, num_of_bananas, num_of_hppits):
         doughnuts = list()
         bananas = list()
+        hppits = list()
         reference_point = [None, None]
 
         for i in xrange(0,num_of_doughnuts):
@@ -72,7 +71,13 @@ class HiddenCostsGenerator:
             reference_point = self.generate_reference_point()  
             bananas.append(self.generate_banana(reference_point))
 
-        return [doughnuts,bananas]
+        for i in xrange(0,num_of_hppits):
+            print('i: %d'%i)    
+            reference_point = self.generate_reference_point()
+            hppits.append(self.generate_hppit(reference_point))
+
+
+        return [doughnuts,bananas,hppits]
 
     # p, c, angle, arclen, mu, sigma        
     def generate_banana(self, reference_point):
@@ -99,7 +104,19 @@ class HiddenCostsGenerator:
         #return [p, c, mu, sigma]
         object_dict= {'name': 'dougnut_%d'%self.index,'x': p, 'y': c, 'radius': mu, 'std_dev': sigma, 'type': 'doughnut'}
         return object_dict
-         
+    
+    # p, c, mu, sigma
+    def generate_hppit(self, reference_point):
+        self.index += 1
+        p = reference_point[0]  #4.17 +self.index*0.2 
+        c = reference_point[1]  #round(38.8 +self.index*0.2,2)
+        mu = 1.3 #0.5 
+        sigma = 0.3 #0.75 
+        print('generating hppit')
+        #return [p, c, mu, sigma]
+        object_dict= {'name': 'hppit_%d'%self.index,'x': p, 'y': c, 'radius': mu, 'std_dev': sigma, 'type': 'doughnut'}
+        return object_dict     
+
     def generate_reference_point(self, ranges=None):
 
         is_in_collision = True
@@ -141,10 +158,13 @@ if __name__ == '__main__':
 
     map_file_path = sys.argv[1]        
     generated_file_path = sys.argv[2]     
-    no_dougnuts = int(sys.argv[3])
-    no_bananas =  int(sys.argv[4])
+    num_dougnuts = int(sys.argv[3])
+    num_bananas =  int(sys.argv[4])
+    num_of_hppits = 0
+    if len(sys.argv)>5	:	
+        num_of_hppits =  int(sys.argv[5])
 
     generator = HiddenCostsGenerator(map_file_path, generated_file_path)
     generator.initialize()
-    generator.generate_yaml_file(no_dougnuts, no_bananas)
+    generator.generate_yaml_file(num_dougnuts, num_bananas, num_of_hppits)
 
