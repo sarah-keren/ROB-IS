@@ -82,6 +82,8 @@ namespace KCL_rosplan {
         get_map_client.call(mapSrv);
         _static_map = mapSrv.response.map;
 
+        hppitsmap_received_ = false;
+
         ROS_INFO("(KCL) fixed waypoint generator: Ready to receive");
     }
 
@@ -225,6 +227,7 @@ namespace KCL_rosplan {
         while (not hppitsmap_received_ and ros::ok()) {
             loop_rate.sleep();
             ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+            ros::spinOnce();
         }
         // Get preference value
         int cell_x = (int) (waypoint.pose.position.x/hppits_map_.info.resolution);

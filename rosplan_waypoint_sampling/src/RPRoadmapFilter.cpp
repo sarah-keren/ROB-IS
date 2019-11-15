@@ -58,9 +58,10 @@ namespace KCL_rosplan {
         ss << "/" << rosplan_kb_name << "/update_array";
         update_kb_client_array_ = nh_.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
+        costmap_received_ = false;
+        hppitsmap_received_ = false;
+
         // Get waypoints
-
-
         ROS_INFO("KCL: (%s) Ready to receive.", ros::this_node::getName().c_str());
     }
 
@@ -359,7 +360,7 @@ namespace KCL_rosplan {
         nh_.setParam(ss.str(), pose_as_array);
 
         ros::Rate loop_rate(10);
-        while (not hppitsmap_received_ and ros::ok()) {
+        while(not hppitsmap_received_ and ros::ok()) {
             loop_rate.sleep();
             ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
             ros::spinOnce();

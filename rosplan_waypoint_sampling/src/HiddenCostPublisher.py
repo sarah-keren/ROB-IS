@@ -197,18 +197,10 @@ class HiddenCostMap:
             object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
             hppit_grid.data = map(lambda c: int((c == hmaxc) * 100.0 * c / float(hmaxc)), hppit_grid.data)
 
-            if preferences:
-                object_grid = self.add_preferences(object_grid)
-
             self.costmap_pub.publish(object_grid)
             self.hppits_pub.publish(hppit_grid)
             self.mergemaps(object_grid, hppit_grid)
             rate.sleep()
-
-    def add_preferences(self, grid):
-        preference_grid = copy.deepcopy(grid)
-
-        return preference_grid
 
 
     def mergemaps(self, object_map, hiddenpref_map):
