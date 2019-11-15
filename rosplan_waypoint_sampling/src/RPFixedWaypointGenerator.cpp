@@ -13,6 +13,9 @@ namespace KCL_rosplan {
         std::string get_map_srv_name;
         nh_.param<std::string>("get_map_srv_name", get_map_srv_name, "/static_map");
 
+        nh_.param<std::string>("hppits_topic", hppits_topic_, "hppits_map");
+        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPFixedWaypointGenerator::hppitsMapCallback, this);
+
 
         std::string rosplan_kb_name;
         nh_.param<std::string>("rosplan_kb_name", rosplan_kb_name, "rosplan_knowledge_base");
@@ -80,6 +83,12 @@ namespace KCL_rosplan {
         _static_map = mapSrv.response.map;
 
         ROS_INFO("(KCL) fixed waypoint generator: Ready to receive");
+    }
+
+
+    void RPFixedWaypointGenerator::hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
+        hppits_map_ = *msg;
+        hppitsmap_received_ = true;
     }
 
     bool RPFixedWaypointGenerator::loadParams() {
@@ -211,6 +220,17 @@ namespace KCL_rosplan {
         std::stringstream ss;
         ss << wp_namespace_output_ << "/" << wp_id;
         nh_.setParam(ss.str(), pose_as_array);
+
+        ros::Rate loop_rate(10);
+        while (not hppitsmap_received_ and ros::ok()) {
+            loop_rate.sleep();
+            ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+        }
+        // Get preference value
+        int cell_x = (int) (waypoint.pose.position.x/hppits_map_.info.resolution);
+        int cell_y = (int) (waypoint.pose.position.y/hppits_map_.info.resolution);
+        double value = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];
+        nh_.setParam(wp_namespace_output_ + "_pref/" + wp_id, value);
     }
 
     void RPFixedWaypointGenerator::generate_wps(int starting_id) {

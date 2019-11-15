@@ -37,7 +37,7 @@ namespace KCL_rosplan {
 
         // subscriptions of this node, robot odometry and costmap
         map_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(costmap_topic_, 1, &RPRoadmapFilter::costMapCallback, this);
-        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(costmap_topic_, 1, &RPRoadmapFilter::hppitsMapCallback, this);
+        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPRoadmapFilter::hppitsMapCallback, this);
 
         // publications of this node (for visualisation purposes), waypoints and connectivity information (edges)
         waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz/waypoints", 10, true);

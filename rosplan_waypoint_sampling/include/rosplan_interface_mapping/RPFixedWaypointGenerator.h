@@ -51,6 +51,14 @@ namespace KCL_rosplan {
 
         nav_msgs::OccupancyGrid _static_map;
 
+        std::string costmap_topic_,hppits_topic_;
+        bool costmap_received_, hppitsmap_received_;
+        nav_msgs::OccupancyGrid cost_map_, hppits_map_;
+        ros::Subscriber hppits_sub_;
+        void hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
+
+
+
         std::map<int,std::map<int, float>> adj_matrix;
         struct dijkstra_comp { /// used by dijkstra method
         public:
