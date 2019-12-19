@@ -422,16 +422,16 @@ namespace KCL_rosplan {
         visualization_msgs::MarkerArray marker_array;
         int count = 0;
         std::vector<int>::iterator sit = sampled_waypoint_ids_.begin();
-        for (; sit!=sampled_waypoint_ids_.end(); sit++) {
+        //for (; sit!=sampled_waypoint_ids_.end(); sit++) {
             visualization_msgs::Marker node_marker;
             node_marker.header.stamp = ros::Time();
             node_marker.header.frame_id = wp_reference_frame_;
             node_marker.ns = wp_namespace_output_;
-            node_marker.action = visualization_msgs::Marker::DELETE;
+            node_marker.action = visualization_msgs::Marker::DELETEALL;
             node_marker.id = count;
             marker_array.markers.push_back(node_marker);
             count++;
-        }
+        //}
 
         waypoints_pub_.publish( marker_array );
 
