@@ -67,10 +67,9 @@ class HiddenCostMap:
 
     def _uniform_hppit(self, p, c, mu, sigma):
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
-        #if (d > mu - 2 * sigma and d < mu + 2 * sigma) and not self._checkCollision(p, c):
         if (d > mu - 2 * sigma and d < mu + 2 * sigma):
             return 0
-        return 100
+        return 1
 
     def _banana(self, p, c, angle, arclen, mu, sigma):
         gamma = angle - arclen / 2.0
@@ -103,31 +102,8 @@ class HiddenCostMap:
 
         dist = 2 * sigma
 
-        # gp = (c[0] - mu * math.cos(gamma-angle), c[1] - mu * math.sin(gamma-angle))
-        # tp = (c[0] + mu * math.cos(theta-angle), c[1] + mu * math.sin(theta-angle))
-
-        # gp = (c[0] + mu * math.sin(gamma-angle), c[1] + mu * math.cos(gamma-angle))
-        # tp = (c[0] + mu * math.sin(theta-angle), c[1] + mu * math.cos(theta-angle))
-
-        # gp = (c[0] - abs(mu * math.sin(gamma - angle)), c[1] - abs(mu * math.cos(gamma - angle)))
-        # tp = (c[0] - abs(mu * math.sin(theta + angle)), c[1] + abs(mu * math.cos(theta + angle)))
-        #
-        # gp = (c[0] - (mu * math.sin(gamma)), c[1] - (mu * math.cos(gamma))) # correct 0 angle
-        # tp = (c[0] - (mu * math.sin(theta)), c[1] - (mu * math.cos(theta))) # correct 0 angle
-        #
-        # gp = ((mu * math.sin(gamma)), (mu * math.cos(gamma)))
-        # tp = ((mu * math.sin(theta)), -(mu * math.cos(theta)))
-        # tp = (c[0] - (tp[0] * math.cos(-angle) + tp[1]*math.sin(-angle)), c[1] - (tp[0]*math.sin(-angle) - tp[1]*math.cos(-angle)))
-        # gp = (c[0] - (gp[0] * math.cos(-angle) + gp[1]*math.sin(-angle)), c[1] - (gp[0]*math.sin(-angle) - gp[1]*math.cos(-angle)))
-
         if k <= gamma and k >= theta:
             return self._uniform_doughnut(p, c, mu, sigma)
-        # d = math.sqrt((p[0] - gp[0]) ** 2 + (p[1] - gp[1]) ** 2)
-        # r = d <= dist
-        # if not r:
-        #     d = math.sqrt((p[0] - tp[0]) ** 2 + (p[1] - tp[1]) ** 2)
-        #     r = d <= dist
-        # return 100*r
         return 0
 
     def gen_costmap(self, preferences=False):
@@ -161,14 +137,13 @@ class HiddenCostMap:
             for y in range(object_grid.info.height):
                 for x in range(object_grid.info.width):
                     obj_cost = 0
-                    hppit_cost = 0
+                    hppit_cost = 1
                     for elem in self.doughnuts:
                         posx = elem['x'];
                         posy = elem['y'];
                         r = elem['radius'];
                         std_dev = elem['std_dev']
-                        obj_cost += self._uniform_doughnut((x * object_grid.info.resolution, y * object_grid.info.resolution),
-                                                       (posx, posy), r, std_dev)
+                        obj_cost += self._uniform_doughnut((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
                     for elem in self.bananas:
                         posx = elem['x'];
                         posy = elem['y'];
@@ -176,15 +151,13 @@ class HiddenCostMap:
                         a = elem['angle'];
                         al = elem['arclen'];
                         std_dev = elem['std_dev']
-                        obj_cost += self._uniform_banana((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy),
-                                                     a, al, r, std_dev)
+                        obj_cost += self._uniform_banana((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), a, al, r, std_dev)
                     for elem in self.hppits:
                         posx = elem['x'];
                         posy = elem['y'];
                         r = elem['radius'];
                         std_dev = elem['std_dev']
-                        hppit_cost += self._uniform_hppit((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy),
-                                                    r, std_dev)
+                        hppit_cost *= self._uniform_hppit((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
 
                     if obj_cost > omaxc:
                         omaxc = obj_cost
@@ -195,7 +168,7 @@ class HiddenCostMap:
                     hppit_grid.data.append(hppit_cost)
 
             object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
-            hppit_grid.data = map(lambda c: int((c == hmaxc) * 100.0 * c / float(hmaxc)), hppit_grid.data)
+            #hppit_grid.data = map(lambda c: int(100.0 * (c == hmaxc)), hppit_grid.data)
 
             self.costmap_pub.publish(object_grid)
             self.hppits_pub.publish(hppit_grid)
@@ -210,7 +183,7 @@ class HiddenCostMap:
         for y in range(object_map.info.height):
             for x in range(object_map.info.width):
                 v = (int(object_map.data[y*object_map.info.width + x]) * int(hiddenpref_map.data[y*hiddenpref_map.info.width + x]))
-                v = v/100
+                #v = v/100
                 merged.data.append(v)
         self.mergemap_pub.publish(merged)
 

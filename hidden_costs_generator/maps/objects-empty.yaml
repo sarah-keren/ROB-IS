@@ -1,0 +1,8 @@
+# This file defines the hidden preference areas for sampling.
+# e.g.
+# hppits:
+# - name: door_middle
+#   radius: 0.25
+#   std_dev: 0.25
+#   x: 6.15
+#   y: 5.94
