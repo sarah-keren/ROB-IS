@@ -4,7 +4,7 @@ import math
 from math import floor
 from itertools import product
 from nav_msgs.msg import OccupancyGrid
-
+from visualization_msgs.msg import Marker, MarkerArray
 
 class HiddenCostMap:
     def __init__(self):
@@ -14,6 +14,7 @@ class HiddenCostMap:
         self.hppits_pub = rospy.Publisher('hppits_map', OccupancyGrid, queue_size=10, latch=True)
         self.mergemap_pub = rospy.Publisher('merged_map', OccupancyGrid, queue_size=10, latch=True)
 
+        self.peaks = self.doughnuts = self.bananas = self.hppits = []
         if rospy.has_param('~peaks'):
             self.peaks = rospy.get_param('~peaks')
         if rospy.has_param('~doughnuts'):
@@ -25,6 +26,8 @@ class HiddenCostMap:
             self.hppits = rospy.get_param('~hppits')
 
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
+        self.obj_pub = rospy.Publisher('objects', MarkerArray, queue_size=10, latch=True)
+        self.publish_objects()
 
     def set_map(self, msg):
         self._static_map = msg
@@ -167,7 +170,8 @@ class HiddenCostMap:
                     object_grid.data.append(obj_cost)
                     hppit_grid.data.append(hppit_cost)
 
-            object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
+            #object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
+            object_grid.data = map(lambda c: int(100.0 * ((omaxc-c) if c > 0 else 0) / float(omaxc)), object_grid.data)
             #hppit_grid.data = map(lambda c: int(100.0 * (c == hmaxc)), hppit_grid.data)
 
             self.costmap_pub.publish(object_grid)
@@ -187,6 +191,106 @@ class HiddenCostMap:
                 merged.data.append(v)
         self.mergemap_pub.publish(merged)
 
+
+    def publish_objects(self):
+        ma = MarkerArray()
+        i = 0
+        for o in self.peaks:
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.ns = "taws_objects"
+            marker.id = i
+            i+= 1
+            marker.action = Marker.ADD
+            marker.pose.position.x = o['x']
+            marker.pose.position.y = o['y']
+            marker.pose.position.z = 0
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.5
+            marker.scale.y = 0.5
+            marker.scale.z = 0.5
+            marker.color.a = 1.0
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.type = Marker.SPHERE;
+            ma.markers.append(marker)
+
+        for o in self.doughnuts:
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.ns = "taws_objects"
+            marker.id = i
+            i+= 1
+            marker.action = Marker.ADD
+            marker.pose.position.x = o['x']
+            marker.pose.position.y = o['y']
+            marker.pose.position.z = 0
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.5
+            marker.scale.y = 0.5
+            marker.scale.z = 0.5
+            marker.color.a = 1.0
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.type = Marker.SPHERE;
+            ma.markers.append(marker)
+   
+        for o in self.bananas:
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.ns = "taws_objects"
+            marker.id = i
+            i+= 1
+            marker.action = Marker.ADD
+            marker.pose.position.x = o['x']
+            marker.pose.position.y = o['y']
+            marker.pose.position.z = 0
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.5
+            marker.scale.y = 0.5
+            marker.scale.z = 0.5
+            marker.color.a = 1.0
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.type = Marker.SPHERE;
+            ma.markers.append(marker)
+
+        for o in self.hppits:
+            marker = Marker()
+            marker.header.frame_id = "map"
+            marker.ns = "taws_objects"
+            marker.id = i
+            i+= 1
+            marker.action = Marker.ADD
+            marker.pose.position.x = o['x']
+            marker.pose.position.y = o['y']
+            marker.pose.position.z = 0
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.5
+            marker.scale.y = 0.5
+            marker.scale.z = 0.5
+            marker.color.a = 1.0
+            marker.color.r = 0.0
+            marker.color.g = 0.0
+            marker.color.b = 1.0
+            marker.type = Marker.SPHERE
+            ma.markers.append(marker)
+        self.obj_pub.publish(ma)
 
 if __name__ == '__main__':
     rospy.init_node('hidden_costmap')
