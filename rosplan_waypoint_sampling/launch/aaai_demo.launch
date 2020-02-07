@@ -28,7 +28,7 @@
     </include>
 
     <!-- visualisation of robot sensor data -->
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rosplan_stage_waypoint_demo)/config/waypoint_sampling.rviz" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rosplan_waypoint_sampling)/config/waypoint_sampling.rviz" />
 
     <!-- probabilistic roadmap generation -->
     <include file="$(find rosplan_interface_mapping)/launch/rosplan_roadmap_server.launch" >
