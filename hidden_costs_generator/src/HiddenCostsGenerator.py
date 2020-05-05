@@ -133,7 +133,7 @@ class HiddenCostsGenerator:
 
             #row
             cell_y = random.randint(1,self.map_height-1)
-            map_y = cell_y*self.resolution
+            map_y = (self.map_height - cell_y)*self.resolution
             map_y = round(map_y,2)
             
             #check for collisions        
