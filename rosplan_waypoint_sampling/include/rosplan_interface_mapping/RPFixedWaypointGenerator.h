@@ -37,6 +37,7 @@ namespace KCL_rosplan {
 
         ros::ServiceClient _add_wp_prm;
         int _MAX_ATT;
+        bool _generate_best_waypoints = false;
         std::string wp_reference_frame_, wp_namespace_input_,wp_namespace_output_;
         std::map<int,int> wp_id_to_index_map_;
         std::vector<geometry_msgs::PoseStamped> waypoints_;

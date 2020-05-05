@@ -16,6 +16,7 @@ namespace KCL_rosplan {
         nh_.param<std::string>("hppits_topic", hppits_topic_, "hppits_map");
         hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPFixedWaypointGenerator::hppitsMapCallback, this);
 
+        nh_.param<bool>("generate_best_waypoints", _generate_best_waypoints, false);
 
         std::string rosplan_kb_name;
         nh_.param<std::string>("rosplan_kb_name", rosplan_kb_name, "rosplan_knowledge_base");
@@ -245,27 +246,69 @@ namespace KCL_rosplan {
             geometry_msgs::PoseStamped pose;
             while (not connected and i < _MAX_ATT) {
 
-                double rangle = ((double) rand() / (RAND_MAX)) * 2 * M_PI;
-                coord.first = it->x + (it->radius * cos(rangle));
-                coord.second = it->y + (it->radius * sin(rangle));
 
-                if (not isVisible(coord, std::make_pair(it->x, it->y))) {
-                    ++i;
-                    ROS_WARN("KCL (%s) Generated a non visible waypoint (wp%d) !", ros::this_node::getName().c_str(), starting_id);
-                    continue;
+                bool attempt_success = false;
+                if (_generate_best_waypoints) {
+
+                    ros::Rate loop_rate(10);
+                    while(not hppitsmap_received_ and ros::ok()) {
+                        loop_rate.sleep();
+                        ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+                        ros::spinOnce();
+                    }
+                    std::pair<double, double> temp_coord;
+
+                    // find the visible waypoint within the region with the max hppit score 
+                    double best = 0;
+                    for (double rangle=0; rangle < 2*M_PI; rangle = rangle + 0.1) {
+
+                        ++i;
+                        temp_coord.first = it->x + (it->radius * cos(rangle));
+                        temp_coord.second = it->y + (it->radius * sin(rangle));
+                        if (not isVisible(temp_coord, std::make_pair(it->x, it->y))) {
+                            continue;
+                        }
+
+                        // Get preference value
+                        int cell_x = (int) (temp_coord.first/hppits_map_.info.resolution);
+                        int cell_y = (int) (temp_coord.second/hppits_map_.info.resolution);
+                        double value = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];
+                        if (value > best) {
+                            best = value;
+                            coord.first = temp_coord.first;
+                            coord.second = temp_coord.second;
+                            attempt_success = true;
+                        }
+                    }
+
+                } else {
+
+                    // generate a waypoint randomly within the region
+                    double rangle = ((double) rand() / (RAND_MAX)) * 2 * M_PI;
+                    coord.first = it->x + (it->radius * cos(rangle));
+                    coord.second = it->y + (it->radius * sin(rangle));
+
+                    if (not isVisible(coord, std::make_pair(it->x, it->y))) {
+                        ++i;
+                        ROS_WARN("KCL (%s) Generated a non visible waypoint (wp%d) !", ros::this_node::getName().c_str(), starting_id);
+                        continue;
+                    }
+                    attempt_success = true;
                 }
+                
+                if (attempt_success) {
+                    rosplan_interface_mapping::AddWaypoint awp;
+                    wp_id = starting_id;
+                    awp.request.id = "wp" + std::to_string(wp_id);
+                    pose.header.frame_id = wp_reference_frame_;
+                    pose.pose.position.x = coord.first;
+                    pose.pose.position.y = coord.second;
+                    awp.request.waypoint = pose;
+                    awp.request.connecting_distance = 2.0;
 
-                rosplan_interface_mapping::AddWaypoint awp;
-                wp_id = starting_id;
-                awp.request.id = "wp" + std::to_string(wp_id);
-                pose.header.frame_id = wp_reference_frame_;
-                pose.pose.position.x = coord.first;
-                pose.pose.position.y = coord.second;
-                awp.request.waypoint = pose;
-                awp.request.connecting_distance = 2.0;
-
-                connected = _add_wp_prm.call(awp);
-                ++i;
+                    connected = _add_wp_prm.call(awp);
+                    ++i;
+                }
             }
             if (connected) {
                 ++starting_id;
@@ -274,6 +317,7 @@ namespace KCL_rosplan {
                 uploadWPToParamServer("wp" + std::to_string(wp_id), pose);
             }
         }
+        ROS_INFO("KCL (%s) Finished generating fixed waypoints.", ros::this_node::getName().c_str());
     }
 
     std::vector<float> RPFixedWaypointGenerator::dijkstra_comp::distance = std::vector<float>();

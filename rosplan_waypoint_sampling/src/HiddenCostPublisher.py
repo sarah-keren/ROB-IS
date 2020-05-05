@@ -170,8 +170,8 @@ class HiddenCostMap:
                     object_grid.data.append(obj_cost)
                     hppit_grid.data.append(hppit_cost)
 
-            #object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
-            object_grid.data = map(lambda c: int(100.0 * ((omaxc-c) if c > 0 else 0) / float(omaxc)), object_grid.data)
+            object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
+            #object_grid.data = map(lambda c: int(100.0 * ((omaxc-c) if c > 0 else 0) / float(omaxc)), object_grid.data)
             #hppit_grid.data = map(lambda c: int(100.0 * (c == hmaxc)), hppit_grid.data)
 
             self.costmap_pub.publish(object_grid)
