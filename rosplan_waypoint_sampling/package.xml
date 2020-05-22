@@ -28,6 +28,7 @@
   <build_depend>rosplan_interface_mapping</build_depend>
   <build_depend>grid_map_msgs</build_depend>
   <build_depend>grid_map_ros</build_depend>
+  <build_depend>eigen_conversions</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>diagnostic_msgs</run_depend>
@@ -44,5 +45,7 @@
   <run_depend>rosplan_interface_mapping</run_depend>
   <run_depend>grid_map_msgs</run_depend>
   <run_depend>grid_map_ros</run_depend>
+  <run_depend>eigen_conversions</run_depend>
+  
 
 </package>
