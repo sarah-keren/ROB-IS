@@ -1,5 +1,5 @@
 # ROB-is docker image
-FROM kclplanning/rosplan
+FROM kclplanning/rosplan:demos_latest
 
 SHELL ["/bin/bash", "-c"]
 WORKDIR /root/ws
