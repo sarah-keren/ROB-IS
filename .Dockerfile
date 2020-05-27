@@ -13,7 +13,7 @@ COPY . ./src/rob_is
 RUN source devel/setup.bash &&\
     rosdep update &&\
     rosdep install --from-paths src/rob_is --ignore-src -q -r -y &&\
-    sudo apt install ros-melodic-rviz-visual-tools
+    apt install ros-melodic-rviz-visual-tools -y -qq
 
 # Build workspace
 RUN catkin build --summarize --no-status
