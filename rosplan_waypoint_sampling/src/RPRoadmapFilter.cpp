@@ -7,7 +7,7 @@
  */
 
 #include <queue>
-#include "rosplan_interface_mapping/RPRoadmapFilter.h"
+#include "robis_interface_mapping/RPRoadmapFilter.h"
 
 namespace KCL_rosplan {
 

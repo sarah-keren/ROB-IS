@@ -1,3 +1,4 @@
+ 
 cmake_minimum_required(VERSION 2.8.3)
 project(rosplan_waypoint_sampling)
 
@@ -36,6 +37,13 @@ include_directories(
 
 # waypoint filter
 add_executable(rp_roadmap_filter src/RPRoadmapFilter.cpp)
-add_executable(rp_fixed_wp_gen src/RPFixedWaypointGenerator.cpp include/rosplan_interface_mapping/RPFixedWaypointGenerator.h)
+add_executable(rp_fixed_wp_gen src/RPFixedWaypointGenerator.cpp include/robis_interface_mapping/RPFixedWaypointGenerator.h)
 target_link_libraries(rp_roadmap_filter ${catkin_LIBRARIES})
 target_link_libraries(rp_fixed_wp_gen ${catkin_LIBRARIES})
+
+#rp_roadmap_server_pref
+add_executable(rp_roadmap_server_pref src/RPRoadmapServerPref.cpp include/robis_interface_mapping/RPRoadmapServerPref.h)
+target_link_libraries(rp_roadmap_server_pref ${catkin_LIBRARIES})
+
+
+

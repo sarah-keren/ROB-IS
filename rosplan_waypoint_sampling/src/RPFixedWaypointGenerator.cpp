@@ -2,7 +2,7 @@
 // Created by gerard on 11/11/2019.
 //
 
-#include "rosplan_interface_mapping/RPFixedWaypointGenerator.h"
+#include "robis_interface_mapping/RPFixedWaypointGenerator.h"
 namespace KCL_rosplan {
 
     RPFixedWaypointGenerator::RPFixedWaypointGenerator() : nh_("~") {
