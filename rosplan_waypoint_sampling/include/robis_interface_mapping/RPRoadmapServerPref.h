@@ -45,6 +45,10 @@ namespace KCL_rosplan {
         virtual void createPRM(nav_msgs::OccupancyGrid &map, unsigned int nr_waypoints, double min_distance, double casting_distance, double connecting_distance, double occupancy_threshold, int total_attempts);
 
 
+        /** 
+        * @Choosing the next WP from the PRM to expand   
+        * @return index of the chosen WP
+        */
         virtual int chooseWPtoExpand();
 	
 	/** 
@@ -52,6 +56,13 @@ namespace KCL_rosplan {
         * @return void
         */
         virtual void processWP(Waypoint* wp);
+
+
+	/** 
+        * @analyze the chosen WP by computing its preference
+        * @return void
+        */
+        //virtual void getPreference(Waypoint* wp);
  
 
         // SARAH::
@@ -61,7 +72,7 @@ namespace KCL_rosplan {
         ros::Subscriber hppits_sub_;
         void hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
         bool _use_preference = true;
-
+	//std::vector<double> WPweights_;
 
 
   
