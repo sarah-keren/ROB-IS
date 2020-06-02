@@ -62,7 +62,7 @@ namespace KCL_rosplan {
          * @param msg the costmap information is encoded in this variable and its value comes from the ROS network
          */
         void costMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
-        void hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
+        void prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
 
         /**
          * @brief given a waypoint unique id (string) and a pose this function stores the waypoint in the ROS parameter server
@@ -93,7 +93,7 @@ namespace KCL_rosplan {
         /// manage communication of this node and the ROS network
         ros::NodeHandle nh_;
         /// topic that this node needs
-        ros::Subscriber map_sub_, hppits_sub_;
+        ros::Subscriber map_sub_, prefs_sub_;
         /// topics that this node offers
         ros::Publisher waypoints_pub_; // for visualisation purposes
         ros::Publisher probability_pub_; // for visualisation purposes
@@ -104,9 +104,9 @@ namespace KCL_rosplan {
         ros::ServiceServer filter_waypoint_service_server_;
 
         /// topic and service names
-        std::string costmap_topic_,hppits_topic_;
-        bool costmap_received_, hppitsmap_received_;
-        nav_msgs::OccupancyGrid cost_map_, hppits_map_;
+        std::string costmap_topic_,prefs_topic_;
+        bool costmap_received_, prefsmap_received_;
+        nav_msgs::OccupancyGrid cost_map_, prefs_map_;
         std::string wp_reference_frame_;
 
         /// how much to wait in seconds for the costmap and KB update services

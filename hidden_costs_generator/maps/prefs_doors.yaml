@@ -1,4 +1,4 @@
-hppits:
+prefs:
 - name: door_upright
   radius: 0.25
   std_dev: 0.25

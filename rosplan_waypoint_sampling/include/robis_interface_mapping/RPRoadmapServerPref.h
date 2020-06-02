@@ -23,6 +23,13 @@
 #define KCL_rp_roadmap_server_pref
 
 namespace KCL_rosplan {
+    //TODO SARAH - how to select between approaches
+    // a - preferences are used to decide which casted WP to choose
+    // b - preferences are used to decide which WP to expand
+    // c - preferences are not considered			
+    enum prefApproachEnum { a, b, c };
+
+    int NUM_CASTING_WPS = 20;	
 
     class RPRoadmapServerPref:public RPRoadmapServer
     {
@@ -55,7 +62,22 @@ namespace KCL_rosplan {
         * @analyze the chosen WP by computing its preference
         * @return void
         */
+	//TODO SARAH - use this to update the weights of each inserted waypoint
         virtual void processWP(Waypoint* wp);
+
+	/** 
+        * @get the preference score (weigth) of the waypoint wp
+        * @return score
+        */
+        virtual double getPref(Waypoint* wp);
+
+	/** 
+        * @choose wp to cast new edge to
+        * @return newly created waypoint
+        */
+        virtual Waypoint* castNewWP(Waypoint* casting_wp, double casting_distance, double occupancy_threshold, const nav_msgs::OccupancyGrid &map);
+
+
 
 
 	/** 
@@ -66,12 +88,14 @@ namespace KCL_rosplan {
  
 
         // SARAH::
-        std::string costmap_topic_,hppits_topic_;
-        bool costmap_received_, hppitsmap_received_;
-        nav_msgs::OccupancyGrid cost_map_, hppits_map_;
-        ros::Subscriber hppits_sub_;
-        void hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
+        std::string costmap_topic_,prefs_topic_;
+        bool costmap_received_, prefsmap_received_;
+        nav_msgs::OccupancyGrid cost_map_, prefs_map_;
+        ros::Subscriber prefs_sub_;
+        void prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
         bool _use_preference = true;
+	prefApproachEnum prefApproach_; 
+	//TODO SARAH: use a class variable instead of local in chooseWPtoExpand
 	//std::vector<double> WPweights_;
 
 

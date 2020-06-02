@@ -37,15 +37,15 @@ class HiddenCostsGenerator:
         self.map_width = width
         self.resolution = self.map_file_info['resolution']
 
-    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas, num_of_hppits=0):#, clusters_dimensions):
+    def generate_yaml_file(self, num_of_doughnuts, num_of_bananas, num_of_prefs=0):#, clusters_dimensions):
         
         # populate the objects_dict
-        [doughnuts,bananas, hppits]= self.generate_objects(num_of_doughnuts, num_of_bananas, num_of_hppits)
+        [doughnuts,bananas, prefs]= self.generate_objects(num_of_doughnuts, num_of_bananas, num_of_prefs)
      
         objects_dict = {}
         objects_dict['doughnuts'] = doughnuts
         objects_dict['bananas'] = bananas
-        objects_dict['hppits'] = hppits
+        objects_dict['prefs'] = prefs
 
         # populate file  
         mode = 'w+' if os.path.exists(self.generated_file_path) else 'w'
@@ -55,10 +55,10 @@ class HiddenCostsGenerator:
 
         print('completed generate_yaml_file')
 
-    def generate_objects(self, num_of_doughnuts, num_of_bananas, num_of_hppits):
+    def generate_objects(self, num_of_doughnuts, num_of_bananas, num_of_prefs):
         doughnuts = list()
         bananas = list()
-        hppits = list()
+        prefs = list()
         reference_point = [None, None]
 
         for i in xrange(0,num_of_doughnuts):
@@ -71,13 +71,13 @@ class HiddenCostsGenerator:
             reference_point = self.generate_reference_point()  
             bananas.append(self.generate_banana(reference_point))
 
-        for i in xrange(0,num_of_hppits):
+        for i in xrange(0,num_of_prefs):
             print('i: %d'%i)    
             reference_point = self.generate_reference_point()
-            hppits.append(self.generate_hppit(reference_point))
+            prefs.append(self.generate_hppit(reference_point))
 
 
-        return [doughnuts,bananas,hppits]
+        return [doughnuts,bananas,prefs]
 
     # p, c, angle, arclen, mu, sigma        
     def generate_banana(self, reference_point):
@@ -160,11 +160,11 @@ if __name__ == '__main__':
     generated_file_path = sys.argv[2]     
     num_dougnuts = int(sys.argv[3])
     num_bananas =  int(sys.argv[4])
-    num_of_hppits = 0
+    num_of_prefs = 0
     if len(sys.argv)>5	:	
-        num_of_hppits =  int(sys.argv[5])
+        num_of_prefs =  int(sys.argv[5])
 
     generator = HiddenCostsGenerator(map_file_path, generated_file_path)
     generator.initialize()
-    generator.generate_yaml_file(num_dougnuts, num_bananas, num_of_hppits)
+    generator.generate_yaml_file(num_dougnuts, num_bananas, num_of_prefs)
 

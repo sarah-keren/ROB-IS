@@ -30,14 +30,14 @@ namespace KCL_rosplan {
         nh_.param<std::string>("wp_reference_frame", wp_reference_frame_, "map");
         nh_.param<std::string>("rosplan_kb_name", rosplan_kb_name, "rosplan_knowledge_base");
         nh_.param<std::string>("costmap_topic", costmap_topic_, "costmap_topic");
-        nh_.param<std::string>("hppits_topic", hppits_topic_, "hppits_map");
+        nh_.param<std::string>("prefs_topic", prefs_topic_, "prefs_map");
         nh_.param<double>("minimum_sample_separation", minimum_radius_, 1.0);
         nh_.param<bool>("animate_sampling", animate_sampling_, false);
 
 
         // subscriptions of this node, robot odometry and costmap
         map_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(costmap_topic_, 1, &RPRoadmapFilter::costMapCallback, this);
-        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPRoadmapFilter::hppitsMapCallback, this);
+        prefs_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(prefs_topic_, 1, &RPRoadmapFilter::prefsMapCallback, this);
 
         // publications of this node (for visualisation purposes), waypoints and connectivity information (edges)
         waypoints_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("viz/waypoints", 10, true);
@@ -59,7 +59,7 @@ namespace KCL_rosplan {
         update_kb_client_array_ = nh_.serviceClient<rosplan_knowledge_msgs::KnowledgeUpdateServiceArray>(ss.str());
 
         costmap_received_ = false;
-        hppitsmap_received_ = false;
+        prefsmap_received_ = false;
 
         // Get waypoints
         ROS_INFO("KCL: (%s) Ready to receive.", ros::this_node::getName().c_str());
@@ -72,9 +72,9 @@ namespace KCL_rosplan {
     }
 
 
-    void RPRoadmapFilter::hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
-        hppits_map_ = *msg;
-        hppitsmap_received_ = true;
+    void RPRoadmapFilter::prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
+        prefs_map_ = *msg;
+        prefsmap_received_ = true;
     }
 
     /*------------------------------*/
@@ -360,15 +360,15 @@ namespace KCL_rosplan {
         nh_.setParam(ss.str(), pose_as_array);
 
         ros::Rate loop_rate(10);
-        while(not hppitsmap_received_ and ros::ok()) {
+        while(not prefsmap_received_ and ros::ok()) {
             loop_rate.sleep();
-            ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+            ROS_INFO("KCL: (%s) Waiting for prefs map...", ros::this_node::getName().c_str());
             ros::spinOnce();
         }
         // Get preference value
-        int cell_x = (int) (waypoint.pose.position.x/hppits_map_.info.resolution);
-        int cell_y = (int) (waypoint.pose.position.y/hppits_map_.info.resolution);
-        double value = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];
+        int cell_x = (int) (waypoint.pose.position.x/prefs_map_.info.resolution);
+        int cell_y = (int) (waypoint.pose.position.y/prefs_map_.info.resolution);
+        double value = prefs_map_.data[cell_x + cell_y*prefs_map_.info.width];
         nh_.setParam(wp_namespace_output_ + "_pref/" + wp_id, value);
     }
 

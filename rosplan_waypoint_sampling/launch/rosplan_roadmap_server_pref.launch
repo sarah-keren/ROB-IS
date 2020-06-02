@@ -42,7 +42,7 @@
         <param name="update_waypoints"    value="$(arg update_waypoints)" />
         <param name="update_connectivity" value="$(arg update_connectivity)" />
         <param name="costmap_topic"       value="/merged_map" />
-        <param name="hppits_topic"        value="/hppits_map" />
+        <param name="prefs_topic"        value="/prefs_map" />
 
 
         <!-- knowledge base -->

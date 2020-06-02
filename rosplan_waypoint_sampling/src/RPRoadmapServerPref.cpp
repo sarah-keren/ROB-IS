@@ -30,21 +30,34 @@ namespace KCL_rosplan {
     RPRoadmapServerPref::RPRoadmapServerPref(){        
         
         // SARAH:: initialize preference info
-	nh_.param<std::string>("hppits_topic", hppits_topic_, "hppits_map");
-	std::cout<<"hppits_topic_ "<< hppits_topic_<<"\n\n\n\n"<<std::endl;
-        hppitsmap_received_ = false;
-        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPRoadmapServerPref::hppitsMapCallback, this);
+	nh_.param<std::string>("prefs_topic", prefs_topic_, "prefs_map");
+	std::cout<<"prefs_topic_ "<< prefs_topic_<<"\n\n\n\n"<<std::endl;
+        prefsmap_received_ = false;
+        prefs_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(prefs_topic_, 1, &RPRoadmapServerPref::prefsMapCallback, this);
         nh_.param<bool>("generate_best_waypoints", _use_preference, true);
+
+	/*
+ 	if(!nh_.hasParam("pref_approach")) {	
+            prefApproach_ = rospy.get_param('pref_approach');
+        
+        }
+        else
+	{
+   	    prefApproach_ = prefApproachEnum::a;
+	}
+	*/	
+
+        prefApproach_ = prefApproachEnum::a;	
 
 
 
    }
 
    // SARAH:: get preference info
-   void RPRoadmapServerPref::hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
+   void RPRoadmapServerPref::prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
 
-        hppits_map_ = *msg;
-        hppitsmap_received_ = true;
+        prefs_map_ = *msg;
+        prefsmap_received_ = true;
    }
 
     void RPRoadmapServerPref::createPRM(nav_msgs::OccupancyGrid &map,
@@ -58,9 +71,9 @@ namespace KCL_rosplan {
 	// get the preference map
 	if (_use_preference) {	
 		ros::Rate loop_rate(10);
-		while (not hppitsmap_received_ and ros::ok()) {
+		while (not prefsmap_received_ and ros::ok()) {
 		    loop_rate.sleep();
-		    ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+		    ROS_INFO("KCL: (%s) Waiting for prefs map...", ros::this_node::getName().c_str());
 		    ros::spinOnce();
 		}
 	}
@@ -71,35 +84,109 @@ namespace KCL_rosplan {
 
 
     }
+
+    Waypoint* RPRoadmapServerPref::castNewWP(Waypoint* casting_wp, double casting_distance, double occupancy_threshold, const nav_msgs::OccupancyGrid &map)
+    {
+
+       	 if ((_use_preference)&&(prefApproach_ == prefApproachEnum::a)) { 
+	 
+		 //get map information
+		 int width = map.info.width;
+		 int height = map.info.height;
+		 double resolution = map.info.resolution; // m per cell
+
+	    	 //sample a set of waypoints	 
+		 int x = 0;
+		 int y = 0;
+		 Waypoint* cur_wp = NULL;
+		 
+	 	 // wps and their preference weight
+		 std::vector<double> WPweights;
+		 std::vector<Waypoint*> WPs;
+		 //TODO SARAH - how to make sure this is not an infinite loop?
+		 while (WPs.size() < NUM_CASTING_WPS)
+		 {
+
+		   x = rand() % width;
+		   y = rand() % height;
+		   //std::cout << "for point: ("<<x<<","<<y<<")" << "\n\n\n\n\n\n"<< std::endl;  
+		   std::stringstream ss;
+		   ss << "wp" << WPs.size();
+		   cur_wp = new Waypoint(ss.str(), x, y, map.info);
+		   // Move the waypoint closer so it's no further than @ref{casting_distance} away from the casting_wp.
+		   //std::cout << "cast wapoint before: ("<<cur_wp->real_x<<","<<cur_wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
+		   cur_wp->update(*casting_wp, casting_distance, map.info);
+		   //std::cout << "cast wapoint after: ("<<cur_wp->real_x<<","<<cur_wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
+
+		   if(map.data[y*width+x] > occupancy_threshold) {
+		        delete cur_wp;
+		    }//if
+		    else
+		    {	
+			//insert the wp and its weights into the lists   
+		        double cur_weight = getPref(cur_wp); 
+			WPweights.push_back(cur_weight);  
+		        WPs.push_back(cur_wp);  	
+		    }//else
+	   	 
+		 }//while  	
+		 
+		  // generate wp according to weights 
+		  std::discrete_distribution<> distribution(WPweights.begin(), WPweights.end());
+		  //std::default_random_engine generator;
+		  std::random_device rd;
+		  std::mt19937 generator(rd());
+		  int index = distribution(generator);	 
+
+		  //get the wp
+		  std::vector<Waypoint*>::iterator item = WPs.begin();
+		  std::advance(item, index);
+		  Waypoint* wp = (*item);
+		  //std::cout << "cast wapoint: ("<<wp->real_x<<","<<wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
+
+		return wp;
+	}//if 
+	else
+	{
+	 return RPRoadmapServer::castNewWP(casting_wp, casting_distance, occupancy_threshold, map);
+	}//else
+    }	
+
     
     void RPRoadmapServerPref::processWP(Waypoint* wp){
 	/*
-	int cell_x = (int) (wp->real_x/hppits_map_.info.resolution);
-        int cell_y = (int) (wp->real_y/hppits_map_.info.resolution);
-        double weight = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];	
+	int cell_x = (int) (wp->real_x/prefs_map_.info.resolution);
+        int cell_y = (int) (wp->real_y/prefs_map_.info.resolution);
+        double weight = prefs_map_.data[cell_x + cell_y*prefs_map_.info.width];	
         WPweights_.push_back(weight);     
 	*/
 	return;
 	
     }		
+
+    double RPRoadmapServerPref::getPref(Waypoint* wp){
+
+	int cell_x = (int) (wp->real_x/prefs_map_.info.resolution);
+        int cell_y = (int) (wp->real_y/prefs_map_.info.resolution);
+        double pref = prefs_map_.data[cell_x + cell_y*prefs_map_.info.width];			                
+	return pref;
+    }
+
     
     // code taken from http://www.cplusplus.com/reference/random/discrete_distribution/	
     // and https://stackoverflow.com/questions/31153610/setting-up-a-discrete-distribution-in-c
     int RPRoadmapServerPref::chooseWPtoExpand() {
-	
-          	        
+	  
+          if ((_use_preference)&&(prefApproach_ == prefApproachEnum::b)) {   	        
 	  // iterate through all waypoints to set their weights          
           double cur_weight = 0;  
         
 	 
   	std::vector<double> WPweights;
 	for (std::map<std::string, Waypoint*>::const_iterator ci = waypoints_.begin(); ci != waypoints_.end(); ++ci) {
-                Waypoint* cur_wp = (*ci).second;
-		int cell_x = (int) (cur_wp->real_x/hppits_map_.info.resolution);
-                int cell_y = (int) (cur_wp->real_y/hppits_map_.info.resolution);
-                cur_weight = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];	
-		                
-                //std::cout << "for point: ("<<cell_x<<","<<cell_y<<") curweight is:" << cur_weight<< "\n\n\n\n\n\n"<< std::endl;  
+                Waypoint* cur_wp = (*ci).second;	
+         	cur_weight = getPref(cur_wp);
+                //std::cout << "for point: ("<<cell_x<<","<<cell_y<<") curweight is:" << cur_weight<< "\n\n\n\n\n\n"<< std::endl;
                 WPweights.push_back(cur_weight);     
           }         
  
@@ -109,27 +196,23 @@ namespace KCL_rosplan {
           //std::default_random_engine generator;
           std::random_device rd;
           std::mt19937 generator(rd());
-          int index = distribution(generator);
-	  /*while (index >= WPweights.size())
-	  {
-		std::cout << "index is:" << index<< "WPweights.size()"<< WPweights.size()<< std::endl;                  
-		index = distribution(generator);
-          }//while
-	  */
+          int index = distribution(generator);	 
 
-	 
-
-	  // print waypoint 	
+	  // print waypoint 
+	  /*		
 	  std::map<std::string, Waypoint*>::iterator item = waypoints_.begin();
           std::advance(item, index);
           Waypoint* wp = (*item).second;
-	  int cell_x = (int) (wp->real_x/hppits_map_.info.resolution);
-          int cell_y = (int) (wp->real_y/hppits_map_.info.resolution);
-          //std::cout << " index is: " << index<<" choosing WP: ("<< cell_x<< ","<<cell_y<<")"<<std::endl;  
-          
-
-
+	  int cell_x = (int) (wp->real_x/prefs_map_.info.resolution);
+          int cell_y = (int) (wp->real_y/prefs_map_.info.resolution);
+          std::cout << " index is: " << index<<" choosing WP: ("<< cell_x<< ","<<cell_y<<")"<<std::endl;  
+          */
 	  return index;
+	 }
+	else
+	{
+  	  return RPRoadmapServer::chooseWPtoExpand();
+	} 	
 
 
 

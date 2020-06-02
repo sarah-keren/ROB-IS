@@ -52,11 +52,11 @@ namespace KCL_rosplan {
 
         nav_msgs::OccupancyGrid _static_map;
 
-        std::string costmap_topic_,hppits_topic_;
-        bool costmap_received_, hppitsmap_received_;
-        nav_msgs::OccupancyGrid cost_map_, hppits_map_;
-        ros::Subscriber hppits_sub_;
-        void hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
+        std::string costmap_topic_,prefs_topic_;
+        bool costmap_received_, prefsmap_received_;
+        nav_msgs::OccupancyGrid cost_map_, prefs_map_;
+        ros::Subscriber prefs_sub_;
+        void prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
 
 
 

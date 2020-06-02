@@ -13,8 +13,8 @@ namespace KCL_rosplan {
         std::string get_map_srv_name;
         nh_.param<std::string>("get_map_srv_name", get_map_srv_name, "/static_map");
 
-        nh_.param<std::string>("hppits_topic", hppits_topic_, "hppits_map");
-        hppits_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(hppits_topic_, 1, &RPFixedWaypointGenerator::hppitsMapCallback, this);
+        nh_.param<std::string>("prefs_topic", prefs_topic_, "prefs_map");
+        prefs_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(prefs_topic_, 1, &RPFixedWaypointGenerator::prefsMapCallback, this);
 
         nh_.param<bool>("generate_best_waypoints", _generate_best_waypoints, false);
 
@@ -83,15 +83,15 @@ namespace KCL_rosplan {
         get_map_client.call(mapSrv);
         _static_map = mapSrv.response.map;
 
-        hppitsmap_received_ = false;
+        prefsmap_received_ = false;
 
         ROS_INFO("(KCL) fixed waypoint generator: Ready to receive");
     }
 
 
-    void RPFixedWaypointGenerator::hppitsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
-        hppits_map_ = *msg;
-        hppitsmap_received_ = true;
+    void RPFixedWaypointGenerator::prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg) {
+        prefs_map_ = *msg;
+        prefsmap_received_ = true;
     }
 
     bool RPFixedWaypointGenerator::loadParams() {
@@ -225,15 +225,15 @@ namespace KCL_rosplan {
         nh_.setParam(ss.str(), pose_as_array);
 
         ros::Rate loop_rate(10);
-        while (not hppitsmap_received_ and ros::ok()) {
+        while (not prefsmap_received_ and ros::ok()) {
             loop_rate.sleep();
-            ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+            ROS_INFO("KCL: (%s) Waiting for prefs map...", ros::this_node::getName().c_str());
             ros::spinOnce();
         }
         // Get preference value
-        int cell_x = (int) (waypoint.pose.position.x/hppits_map_.info.resolution);
-        int cell_y = (int) (waypoint.pose.position.y/hppits_map_.info.resolution);
-        double value = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];
+        int cell_x = (int) (waypoint.pose.position.x/prefs_map_.info.resolution);
+        int cell_y = (int) (waypoint.pose.position.y/prefs_map_.info.resolution);
+        double value = prefs_map_.data[cell_x + cell_y*prefs_map_.info.width];
         nh_.setParam(wp_namespace_output_ + "_pref/" + wp_id, value);
     }
 
@@ -251,9 +251,9 @@ namespace KCL_rosplan {
                 if (_generate_best_waypoints) {
 
                     ros::Rate loop_rate(10);
-                    while(not hppitsmap_received_ and ros::ok()) {
+                    while(not prefsmap_received_ and ros::ok()) {
                         loop_rate.sleep();
-                        ROS_INFO("KCL: (%s) Waiting for hppits map...", ros::this_node::getName().c_str());
+                        ROS_INFO("KCL: (%s) Waiting for prefs map...", ros::this_node::getName().c_str());
                         ros::spinOnce();
                     }
                     std::pair<double, double> temp_coord;
@@ -270,9 +270,9 @@ namespace KCL_rosplan {
                         }
 
                         // Get preference value
-                        int cell_x = (int) (temp_coord.first/hppits_map_.info.resolution);
-                        int cell_y = (int) (temp_coord.second/hppits_map_.info.resolution);
-                        double value = hppits_map_.data[cell_x + cell_y*hppits_map_.info.width];
+                        int cell_x = (int) (temp_coord.first/prefs_map_.info.resolution);
+                        int cell_y = (int) (temp_coord.second/prefs_map_.info.resolution);
+                        double value = prefs_map_.data[cell_x + cell_y*prefs_map_.info.width];
                         if (value > best) {
                             best = value;
                             coord.first = temp_coord.first;

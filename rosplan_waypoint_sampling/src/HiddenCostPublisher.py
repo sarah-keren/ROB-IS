@@ -11,19 +11,19 @@ class HiddenCostMap:
         self._static_map = None
         self._hidden_costmap = None
         self.costmap_pub = rospy.Publisher('costmap', OccupancyGrid, queue_size=10, latch=True)
-        self.hppits_pub = rospy.Publisher('hppits_map', OccupancyGrid, queue_size=10, latch=True)
+        self.prefs_pub = rospy.Publisher('prefs_map', OccupancyGrid, queue_size=10, latch=True)
         self.mergemap_pub = rospy.Publisher('merged_map', OccupancyGrid, queue_size=10, latch=True)
 
-        self.peaks = self.doughnuts = self.bananas = self.hppits = []
+        self.peaks = self.doughnuts = self.bananas = self.prefs = []
         if rospy.has_param('~peaks'):
             self.peaks = rospy.get_param('~peaks')
         if rospy.has_param('~doughnuts'):
             self.doughnuts = rospy.get_param('~doughnuts')
         if rospy.has_param('~bananas'):
             self.bananas = rospy.get_param('~bananas')
-        self.hppits = []
-        if rospy.has_param('~hppits'):
-            self.hppits = rospy.get_param('~hppits')
+        self.prefs = []
+        if rospy.has_param('~prefs'):
+            self.prefs = rospy.get_param('~prefs')
 
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
         self.obj_pub = rospy.Publisher('objects', MarkerArray, queue_size=10, latch=True)
@@ -68,7 +68,7 @@ class HiddenCostMap:
             return 100
         return 0
 
-    def _uniform_hppit(self, p, c, mu, sigma):
+    def _uniform_pref(self, p, c, mu, sigma):
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
         if (d > mu - 2 * sigma and d < mu + 2 * sigma):
             return 0
@@ -131,16 +131,16 @@ class HiddenCostMap:
             object_grid = OccupancyGrid()
             object_grid.header.frame_id = "map"
             object_grid.info = self._static_map.info
-            hppit_grid = OccupancyGrid()
-            hppit_grid.header.frame_id = "map"
-            hppit_grid.info = self._static_map.info
+            pref_grid = OccupancyGrid()
+            pref_grid.header.frame_id = "map"
+            pref_grid.info = self._static_map.info
 
             omaxc = 1
             hmaxc = 1
             for y in range(object_grid.info.height):
                 for x in range(object_grid.info.width):
                     obj_cost = 0
-                    hppit_cost = 1
+                    pref_cost = 1
                     for elem in self.doughnuts:
                         posx = elem['x'];
                         posy = elem['y'];
@@ -155,28 +155,28 @@ class HiddenCostMap:
                         al = elem['arclen'];
                         std_dev = elem['std_dev']
                         obj_cost += self._uniform_banana((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), a, al, r, std_dev)
-                    for elem in self.hppits:
+                    for elem in self.prefs:
                         posx = elem['x'];
                         posy = elem['y'];
                         r = elem['radius'];
                         std_dev = elem['std_dev']
-                        hppit_cost *= self._uniform_hppit((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
+                        pref_cost *= self._uniform_pref((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
 
                     if obj_cost > omaxc:
                         omaxc = obj_cost
 
-                    if hppit_cost > hmaxc:
-                        hmaxc = hppit_cost
+                    if pref_cost > hmaxc:
+                        hmaxc = pref_cost
                     object_grid.data.append(obj_cost)
-                    hppit_grid.data.append(hppit_cost)
+                    pref_grid.data.append(pref_cost)
 
             object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
             #object_grid.data = map(lambda c: int(100.0 * ((omaxc-c) if c > 0 else 0) / float(omaxc)), object_grid.data)
-            #hppit_grid.data = map(lambda c: int(100.0 * (c == hmaxc)), hppit_grid.data)
+            #pref_grid.data = map(lambda c: int(100.0 * (c == hmaxc)), pref_grid.data)
 
             self.costmap_pub.publish(object_grid)
-            self.hppits_pub.publish(hppit_grid)
-            self.mergemaps(object_grid, hppit_grid)
+            self.prefs_pub.publish(pref_grid)
+            self.mergemaps(object_grid, pref_grid)
             rate.sleep()
 
 
@@ -267,7 +267,7 @@ class HiddenCostMap:
             marker.type = Marker.SPHERE;
             ma.markers.append(marker)
 
-        for o in self.hppits:
+        for o in self.prefs:
             marker = Marker()
             marker.header.frame_id = "map"
             marker.ns = "taws_objects"
