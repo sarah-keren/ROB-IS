@@ -98,36 +98,34 @@ namespace KCL_rosplan {
 	    	 //sample a set of waypoints	 
 		 int x = 0;
 		 int y = 0;
-		 Waypoint* cur_wp = NULL;
+		 
 		 
 	 	 // wps and their preference weight
 		 std::vector<double> WPweights;
-		 std::vector<Waypoint*> WPs;
+		 std::vector<Waypoint> WPs;
+		 
 		 //TODO SARAH - how to make sure this is not an infinite loop?
-		 while (WPs.size() < NUM_CASTING_WPS)
+		 while (WPs.size() < NUM_CASTED_WPS)
 		 {
 
 		   x = rand() % width;
 		   y = rand() % height;
 		   //std::cout << "for point: ("<<x<<","<<y<<")" << "\n\n\n\n\n\n"<< std::endl;  
 		   std::stringstream ss;
-		   ss << "wp" << WPs.size();
-		   cur_wp = new Waypoint(ss.str(), x, y, map.info);
+		   ss << "temp_wp" << WPs.size();
+		   Waypoint new_wp = Waypoint(ss.str(), x, y, map.info);
+
 		   // Move the waypoint closer so it's no further than @ref{casting_distance} away from the casting_wp.
 		   //std::cout << "cast wapoint before: ("<<cur_wp->real_x<<","<<cur_wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
-		   cur_wp->update(*casting_wp, casting_distance, map.info);
+		   new_wp.update(*casting_wp, casting_distance, map.info);
 		   //std::cout << "cast wapoint after: ("<<cur_wp->real_x<<","<<cur_wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
-
-		   if(map.data[y*width+x] > occupancy_threshold) {
-		        delete cur_wp;
+		   if (map.data[new_wp.grid_x + new_wp.grid_y * map.info.width] <= occupancy_threshold) 	
+                   {
+		   	//insert the wp and its weights into the lists   
+		        double new_weight = getPref(&new_wp); 
+			WPweights.push_back(new_weight);  
+		        WPs.push_back(new_wp);  	
 		    }//if
-		    else
-		    {	
-			//insert the wp and its weights into the lists   
-		        double cur_weight = getPref(cur_wp); 
-			WPweights.push_back(cur_weight);  
-		        WPs.push_back(cur_wp);  	
-		    }//else
 	   	 
 		 }//while  	
 		 
@@ -138,10 +136,12 @@ namespace KCL_rosplan {
 		  std::mt19937 generator(rd());
 		  int index = distribution(generator);	 
 
-		  //get the wp
-		  std::vector<Waypoint*>::iterator item = WPs.begin();
+		  //get the wp	     
+		  std::vector<Waypoint>::iterator item = WPs.begin();
 		  std::advance(item, index);
-		  Waypoint* wp = (*item);
+		  std::stringstream ss;
+                  ss << "wp" << waypoints_.size();
+		  Waypoint* wp = new Waypoint(ss.str(), item->grid_x, item->grid_y, map.info);
 		  //std::cout << "cast wapoint: ("<<wp->real_x<<","<<wp->real_x<<")" << "\n\n\n\n\n\n"<< std::endl;  
 
 		return wp;

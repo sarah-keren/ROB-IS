@@ -29,7 +29,7 @@ namespace KCL_rosplan {
     // c - preferences are not considered			
     enum prefApproachEnum { a, b, c };
 
-    int NUM_CASTING_WPS = 20;	
+    int NUM_CASTED_WPS = 20;	
 
     class RPRoadmapServerPref:public RPRoadmapServer
     {
