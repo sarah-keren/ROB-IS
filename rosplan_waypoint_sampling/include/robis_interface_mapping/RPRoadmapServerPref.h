@@ -22,13 +22,14 @@
 #ifndef KCL_rp_roadmap_server_pref
 #define KCL_rp_roadmap_server_pref
 
-namespace KCL_rosplan {
-    //TODO SARAH - how to select between approaches
-    // a - preferences are used to decide which casted WP to choose
-    // b - preferences are used to decide which WP to expand
-    // c - preferences are not considered			
-    enum prefApproachEnum { a, b, c };
 
+namespace KCL_rosplan {
+    // prefs_cast - preferences are used to decide which casted WP to choose
+    // prefs_expand - preferences are used to decide which WP to expand
+    // prefs_ignored - preferences are not considered			
+    const std::string PREFS_EXPAND = "prefs_expand";
+    const std::string PREFS_CAST = "prefs_cast";
+    const std::string PREFS_IGNORED = "prefs_ignored";    
     int NUM_CASTED_WPS = 20;	
 
     class RPRoadmapServerPref:public RPRoadmapServer
@@ -94,7 +95,7 @@ namespace KCL_rosplan {
         ros::Subscriber prefs_sub_;
         void prefsMapCallback(const nav_msgs::OccupancyGridConstPtr& msg);
         bool _use_preference = true;
-	prefApproachEnum prefApproach_; 
+	std::string prefsApproach_; 
 	//TODO SARAH: use a class variable instead of local in chooseWPtoExpand
 	//std::vector<double> WPweights_;
 

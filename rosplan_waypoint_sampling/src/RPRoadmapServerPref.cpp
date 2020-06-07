@@ -31,24 +31,21 @@ namespace KCL_rosplan {
         
         // SARAH:: initialize preference info
 	nh_.param<std::string>("prefs_topic", prefs_topic_, "prefs_map");
-	std::cout<<"prefs_topic_ "<< prefs_topic_<<"\n\n\n\n"<<std::endl;
         prefsmap_received_ = false;
         prefs_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(prefs_topic_, 1, &RPRoadmapServerPref::prefsMapCallback, this);
         nh_.param<bool>("generate_best_waypoints", _use_preference, true);
 
-	/*
- 	if(!nh_.hasParam("pref_approach")) {	
-            prefApproach_ = rospy.get_param('pref_approach');
-        
+       
+	if (nh_.getParam("prefs_approach", prefsApproach_))
+        {
+          ROS_INFO("Got param: prefs_approach %s", prefsApproach_.c_str());
         }
         else
-	{
-   	    prefApproach_ = prefApproachEnum::a;
-	}
-	*/	
-
-        prefApproach_ = prefApproachEnum::a;	
-
+        {
+          prefsApproach_ = PREFS_CAST;
+   	  ROS_INFO("no param prefs_approach specified, using default %s", prefsApproach_.c_str());
+        }
+   
 
 
    }
@@ -88,7 +85,7 @@ namespace KCL_rosplan {
     Waypoint* RPRoadmapServerPref::castNewWP(Waypoint* casting_wp, double casting_distance, double occupancy_threshold, const nav_msgs::OccupancyGrid &map)
     {
 
-       	 if ((_use_preference)&&(prefApproach_ == prefApproachEnum::a)) { 
+       	 if ((_use_preference)&&(prefsApproach_.compare(PREFS_CAST) == 0)) { 
 	 
 		 //get map information
 		 int width = map.info.width;
@@ -177,7 +174,7 @@ namespace KCL_rosplan {
     // and https://stackoverflow.com/questions/31153610/setting-up-a-discrete-distribution-in-c
     int RPRoadmapServerPref::chooseWPtoExpand() {
 	  
-          if ((_use_preference)&&(prefApproach_ == prefApproachEnum::b)) {   	        
+          if ((_use_preference)&&(prefsApproach_.compare(PREFS_EXPAND)==0)) {   	        
 	  // iterate through all waypoints to set their weights          
           double cur_weight = 0;  
         

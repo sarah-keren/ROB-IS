@@ -2,7 +2,7 @@
 <launch>
 
     <!-- Important Experiment Arguments -->
-    <arg name="approach"         default="0" />
+    <arg name="approach"         default="1" />
     <arg name="max_sample_size"  default="50" />
     <arg name="max_prm_size"     default="1000" />
     <arg name="rviz"             default="true" />
@@ -39,7 +39,7 @@
         <arg name="wp_reference_frame"  value="/map" />
         <arg name="rosplan_kb_name"     value="rosplan_knowledge_base" />
         <arg name="costmap_topic"       value="/costmap" />
-        <param name="prefs_topic"        value="/prefs_map" />
+        <arg name="prefs_topic"        value="/prefs_map" />
     </include>
 
     <!-- ROSPlan -->
@@ -111,7 +111,7 @@
     <!-- hidden costmaps -->
     <node pkg="rosplan_waypoint_sampling" name="hidden_costmap" type="HiddenCostPublisher.py" output="screen">
         <rosparam file="$(arg objects_file)" command="load" />
-        <rosparam file="$(arg prefs_file)" command="load" />
+        <rosparam file="$(arg prefs_file)" command="load" />z
     </node>
 
     <group if="$(arg rviz)">

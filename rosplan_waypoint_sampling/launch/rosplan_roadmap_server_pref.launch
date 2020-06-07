@@ -8,6 +8,9 @@
     <arg name="node_name" default="rosplan_roadmap_server" />
     <arg name="wp_namespace" default="/rosplan_demo_waypoints" />
     <arg name="odom_topic" default="/odom" />
+    <arg name="prefs_topic"  default="/prefs_map" />
+    <!-- how preferences are integrated into the sampling process: prefs_cast (prefs used to selected casted WP), prefs_expand (prefs used to selected WP to expand), prefs_ignored-->
+    <arg name="prefs_approach"  default="prefs_expand" />
 
     <!-- not commonly used but you could distinguish between multiple KB using this parameter -->
     <arg name="rosplan_kb_name" default="rosplan_knowledge_base" />
@@ -42,8 +45,8 @@
         <param name="update_waypoints"    value="$(arg update_waypoints)" />
         <param name="update_connectivity" value="$(arg update_connectivity)" />
         <param name="costmap_topic"       value="/merged_map" />
-        <param name="prefs_topic"        value="/prefs_map" />
-
+        <param name="prefs_topic"         value="$(arg prefs_topic)"/>
+        <param name="prefs_approach"      value="$(arg prefs_approach)" />
 
         <!-- knowledge base -->
         <param name="rosplan_kb_name" value="$(arg rosplan_kb_name)" />

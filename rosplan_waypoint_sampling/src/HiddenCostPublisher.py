@@ -21,9 +21,13 @@ class HiddenCostMap:
             self.doughnuts = rospy.get_param('~doughnuts')
         if rospy.has_param('~bananas'):
             self.bananas = rospy.get_param('~bananas')
-        self.prefs = []
-        if rospy.has_param('~prefs'):
-            self.prefs = rospy.get_param('~prefs')
+        self.hard_prefs = []
+        if rospy.has_param('~hard_prefs'):
+            self.hard_prefs = rospy.get_param('~hard_prefs')
+        self.soft_prefs = []
+        if rospy.has_param('~soft_prefs'):
+            self.soft_prefs = rospy.get_param('~soft_prefs')
+
 
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
         self.obj_pub = rospy.Publisher('objects', MarkerArray, queue_size=10, latch=True)
@@ -73,6 +77,16 @@ class HiddenCostMap:
         if (d > mu - 2 * sigma and d < mu + 2 * sigma):
             return 0
         return 1
+
+    def _normaldist_pref(self, p, c, mu, sigma):
+        d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
+        if (d > mu - 2 * sigma and d < mu + 2 * sigma):
+            prob = math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2)
+	else:
+            prob = 1
+        return prob
+	
+
 
     def _banana(self, p, c, angle, arclen, mu, sigma):
         gamma = angle - arclen / 2.0
@@ -155,12 +169,18 @@ class HiddenCostMap:
                         al = elem['arclen'];
                         std_dev = elem['std_dev']
                         obj_cost += self._uniform_banana((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), a, al, r, std_dev)
-                    for elem in self.prefs:
+                    for elem in self.hard_prefs:
                         posx = elem['x'];
                         posy = elem['y'];
                         r = elem['radius'];
                         std_dev = elem['std_dev']
                         pref_cost *= self._uniform_pref((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
+                    for elem in self.soft_prefs:
+                        posx = elem['x'];
+                        posy = elem['y'];
+                        r = elem['radius'];
+                        std_dev = elem['std_dev']
+                        pref_cost *= self._normaldist_pref((x * object_grid.info.resolution, y * object_grid.info.resolution), (posx, posy), r, std_dev)
 
                     if obj_cost > omaxc:
                         omaxc = obj_cost
@@ -169,6 +189,7 @@ class HiddenCostMap:
                         hmaxc = pref_cost
                     object_grid.data.append(obj_cost)
                     pref_grid.data.append(pref_cost)
+
 
             object_grid.data = map(lambda c: int(100.0 * c / float(omaxc)), object_grid.data)
             #object_grid.data = map(lambda c: int(100.0 * ((omaxc-c) if c > 0 else 0) / float(omaxc)), object_grid.data)
