@@ -35,7 +35,6 @@ hard_prefs:
   type: doughnut
   x: 3.75
   y: 7.09
-soft_prefs:
 - name: aid_kit3
   radius: 0.5
   std_dev: 0.25

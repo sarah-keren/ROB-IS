@@ -74,7 +74,7 @@ class HiddenCostsGenerator:
         for i in xrange(0,num_of_prefs):
             print('i: %d'%i)    
             reference_point = self.generate_reference_point()
-            prefs.append(self.generate_hppit(reference_point))
+            prefs.append(self.generate_prefs(reference_point))
 
 
         return [doughnuts,bananas,prefs]
@@ -106,15 +106,15 @@ class HiddenCostsGenerator:
         return object_dict
     
     # p, c, mu, sigma
-    def generate_hppit(self, reference_point):
+    def generate_pref(self, reference_point):
         self.index += 1
         p = reference_point[0]  #4.17 +self.index*0.2 
         c = reference_point[1]  #round(38.8 +self.index*0.2,2)
         mu = 1.3 #0.5 
         sigma = 0.3 #0.75 
-        print('generating hppit')
+        print('generating prefs')
         #return [p, c, mu, sigma]
-        object_dict= {'name': 'hppit_%d'%self.index,'x': p, 'y': c, 'radius': mu, 'std_dev': sigma, 'type': 'doughnut'}
+        object_dict= {'name': 'pref_%d'%self.index,'x': p, 'y': c, 'radius': mu, 'std_dev': sigma, 'type': 'doughnut'}
         return object_dict     
 
     def generate_reference_point(self, ranges=None):

@@ -30,7 +30,7 @@ namespace KCL_rosplan {
     RPRoadmapServerPref::RPRoadmapServerPref(){        
         
         // SARAH:: initialize preference info
-	nh_.param<std::string>("prefs_topic", prefs_topic_, "prefs_map");
+	nh_.param<std::string>("prefs_topic", prefs_topic_, "merged_map");
         prefsmap_received_ = false;
         prefs_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>(prefs_topic_, 1, &RPRoadmapServerPref::prefsMapCallback, this);
         nh_.param<bool>("generate_best_waypoints", _use_preference, true);
@@ -205,7 +205,7 @@ namespace KCL_rosplan {
           std::cout << " index is: " << index<<" choosing WP: ("<< cell_x<< ","<<cell_y<<")"<<std::endl;  
           */
 	  return index;
-	 }
+	 }//if
 	else
 	{
   	  return RPRoadmapServer::chooseWPtoExpand();

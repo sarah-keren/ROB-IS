@@ -258,7 +258,7 @@ namespace KCL_rosplan {
                     }
                     std::pair<double, double> temp_coord;
 
-                    // find the visible waypoint within the region with the max hppit score 
+                    // find the visible waypoint within the region with the max prefs score 
                     double best = 0;
                     for (double rangle=0; rangle < 2*M_PI; rangle = rangle + 0.1) {
 
