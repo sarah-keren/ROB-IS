@@ -10,7 +10,7 @@
     <arg name="odom_topic" default="/odom" />
     <arg name="prefs_topic"  default="/prefs_map" />
     <!-- how preferences are integrated into the sampling process: prefs_cast (prefs used to selected casted WP), prefs_expand (prefs used to selected WP to expand), prefs_ignored-->
-    <arg name="prefs_approach"  default="prefs_cast" />
+    <arg name="prefs_approach"  default="prefs_expand" />
 
     <!-- not commonly used but you could distinguish between multiple KB using this parameter -->
     <arg name="rosplan_kb_name" default="rosplan_knowledge_base" />
