@@ -18,7 +18,7 @@ RUN source devel/setup.bash &&\
 RUN  echo "IdentityFile ~/.ssh/rob_is-docker" >> /etc/ssh/ssh_config
 
 # REMOVE ME ONCE MERGED IN MASTER
-RUN cd /root/ws/src/rosplan_demos && git checkout -b sarah-keren-master master && git pull https://github.com/sarah-keren/rosplan_demos.git master
+RUN  git config --global user.email "you@example.com" && git config --global user.name "Your Name" && cd /root/ws/src/rosplan_demos && git fetch --unshallow && git checkout -b sarah-keren-master master && git pull https://github.com/sarah-keren/rosplan_demos.git master --allow-unrelated-histories --no-edit --rebase
 
 # Build workspace
 RUN catkin build --summarize --no-status
