@@ -190,10 +190,15 @@ def plan_cost():
 
 def write_plan(results_all, results_best):
     try:
+        results_first = results_all[0]
         f = open(results_path, "a")
         f.write(str(approach)+","+os.path.basename(initial_state)+","+str(results_first.time) + ',' +
                 str(results_best.time) + ',' + str(results_first.plan_duration) + ',' + str(results_best.plan_duration)
-                + ',' + str(results_first.pref_cost) + ',' + str(results_best.pref_cost)+"\n")
+                + ',' + str(results_first.pref_cost) + ',' + str(results_best.pref_cost))
+        for r in results_all:
+            f.write(",,,")
+            f.write(str(r.time) + ',' + str(r.plan_duration) + ',' + str(r.pref_cost))
+        f.write("\n")
     except:
         rospy.logerr("KCL: (%s) Error writing to results file." % rospy.get_name())     
     finally:
@@ -297,7 +302,7 @@ try:
                     rospy.loginfo("KCL: (%s) Plan not received, waiting..." % rospy.get_name())
                     rospy.sleep(0.5)
                 results = plan_cost()
-                write_plan(results, results)  # As we stop in the first solution, best results are first results.
+                write_plan([results], results)  # As we stop in the first solution, best results are first results.
                 break
         if not plan_found:
             plan_failed()
