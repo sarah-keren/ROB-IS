@@ -188,7 +188,7 @@ def plan_cost():
     print "increasing cost by: " + str(time_at_wp) + " * " + str(current_wp_cost) + " = " +  str(incurred_cost) 
     return Results(plan, rospy.Time.now()-start_time, plan_duration, total_distance, total_cost)
 
-def write_plan(results_first, results_best):
+def write_plan(results_all, results_best):
     try:
         f = open(results_path, "a")
         f.write(str(approach)+","+os.path.basename(initial_state)+","+str(results_first.time) + ',' +
@@ -210,13 +210,14 @@ def plan_failed():
 
 
 best_vals = Results() #([], 0, 0, 0, float('inf'))  # (plan, plan_duration, total_distance, cost)
-first_vals = Results()
+#first_vals = Results()
+all_vals = []
 lock = threading.Lock()
 start_time = -1
 finished = False
 
 def main_sampling_loop():
-    global best_vals, first_vals, max_sample_size,plan_recieved, lock
+    global best_vals, all_vals, max_sample_size,plan_recieved, lock#, first_vals
 
     make_prm(max_prm_size)
 
@@ -258,11 +259,14 @@ def main_sampling_loop():
                 rospy.sleep(0.5)
             res = plan_cost()
             lock.acquire()
-            if res.cost < best_vals.cost:
+            if res.pref_cost < best_vals.pref_cost:
                 best_vals = res
+            elif res.pref_cost == best_vals.pref_cost and res.plan_duration < best_vals.plan_duration:
+                best_vals = res
+            #if not first_vals.plan:  # if no plan yet
+            #    first_vals = res
+            all_vals.append(res)
             lock.release()
-            if not first_vals.plan:  # if no plan yet
-                first_vals = res
             if finished:
                 return None  # End thread
             # break
@@ -315,7 +319,7 @@ try:
             plan_failed()
         else:
             rospy.loginfo("KCL: (%s) After %f seconds: duration %f, distance %f, cost %f" % (rospy.get_name(), time_limit, best_vals[1], best_vals[2], best_vals[3]))
-            write_plan(first_vals, best_vals) # plan_duration, total_distance, total_cost
+            write_plan(all_vals, best_vals) # plan_duration, total_distance, total_cost
         rospy.loginfo("KCL: (%s) Total time: %f minutes" % (rospy.get_name(), (rospy.Time.now() - start_time).to_sec() / 60.0))
         rospy.loginfo("KCL: (%s) Time limit: %f minutes" % (rospy.get_name(), (time_limit/60.0)))
         print '\n\n\n'
