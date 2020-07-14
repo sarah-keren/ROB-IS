@@ -1,0 +1,33 @@
+bananas: []
+doughnuts:
+- name: dougnut_1
+  radius: 1.3
+  std_dev: 0.3
+  type: doughnut
+  x: 22.7
+  y: 19.5
+- name: dougnut_2
+  radius: 1.3
+  std_dev: 0.3
+  type: doughnut
+  x: 5.15
+  y: 24.4
+- name: dougnut_3
+  radius: 1.3
+  std_dev: 0.3
+  type: doughnut
+  x: 2.4
+  y: 44.1
+- name: dougnut_4
+  radius: 1.3
+  std_dev: 0.3
+  type: doughnut
+  x: 5.65
+  y: 33.85
+- name: dougnut_5
+  radius: 1.3
+  std_dev: 0.3
+  type: doughnut
+  x: 22.55
+  y: 20.3
+hppits: []
