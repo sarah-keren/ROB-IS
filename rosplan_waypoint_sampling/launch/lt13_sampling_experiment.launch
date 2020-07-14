@@ -9,6 +9,7 @@
     <arg name="objects_file"     default="$(find hidden_costs_generator)/object_config/simple_house_30doughnuts_variant00.yaml" />
     <arg name="prefs_file"       default="$(find hidden_costs_generator)/maps/objects-empty.yaml" />
     <arg name="initial_state"    default="$(find hidden_costs_generator)/pddl_problems/problem_1goal_simple_house_30doughnuts_variant00.yaml.pddl" />
+    <arg name="results_path"     default="$(find rosplan_stage_waypoint_demo)/pddl/results.csv" />
 
     <param name="/use_sim_time" value="$(arg rviz)"/>
 
@@ -130,7 +131,7 @@
         <param name="autom_gen_problem_path" value="$(find rosplan_stage_waypoint_demo)/pddl/generated_problem.pddl" />
         <param name="domain_path"            value="$(find rosplan_stage_waypoint_demo)/pddl/domain_turtlebot_demo.pddl" />
         <param name="data_path"              value="$(find rosplan_stage_waypoint_demo)/pddl/" />
-        <param name="results_path"           value="$(find rosplan_stage_waypoint_demo)/pddl/results.csv" />
+        <param name="results_path"           value="$(arg results_path)" />
         <param name="initial_state"          value="$(arg initial_state)" />
         <param name="planner_command"        value="timeout 10 $(find rosplan_planning_system)/common/bin/popf DOMAIN PROBLEM" />
         <param name="sampling_approach"               value="$(arg sampling_approach)" />
