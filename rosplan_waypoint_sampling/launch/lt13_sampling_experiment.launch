@@ -33,7 +33,7 @@
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
 
     <!-- AMCL -->
-    <include file="$(find turtlebot3_navigation)/launch/amcl.launch">
+    <include file="$(find turtlebot3_navigation)/launch/amcl.launch" if="$(arg rviz)">
         <arg name="scan_topic" value="base_scan" />
         <arg name="initial_pose_x" value="13.40" if="$(eval arg('stage_map')=='lt13')"/>
         <arg name="initial_pose_x" value="6.525" if="$(eval arg('stage_map')=='simple_house')"/>
@@ -83,7 +83,7 @@
     </node>
 
     <!-- sampling approach -->
-    <group if="$(eval arg('sampling_approach')==0 and arg('generate_best_waypoints')==True)">
+    <group if="$(eval arg('sampling_approach')==0">
         <!-- waypoint filtering node (roadmap) -->
         <node pkg="rosplan_waypoint_sampling" name="waypoint_sampler" type="rp_roadmap_filter" output="screen">
             <param name="srv_timeout"         value="6" />
