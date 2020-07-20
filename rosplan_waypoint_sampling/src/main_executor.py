@@ -264,6 +264,8 @@ def main_sampling_loop():
                 resamples += 1
             else:
                 sample_count += 2
+            if finished or approach == 2:
+                return None  # End thread
         else:
             # Wait for plan
             while not rospy.is_shutdown() and not plan_recieved:
@@ -342,6 +344,9 @@ try:
         #if t.isAlive():
         #    rospy.loginfo("KCL: (%s) Thread still alive after timeout, waiting for it to end" % rospy.get_name())
         #    t.join()  # Wait for thread to finish nicely
+        rospy.signal_shutdown("Ending process.")
+        print "Finishing process"
+        sys.exit(0)
 
 
 except rospy.ServiceException, e:
