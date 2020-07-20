@@ -33,7 +33,7 @@ data_path = rospy.get_param('~data_path', "")
 initial_state = rospy.get_param('~initial_state', "param_not_set")
 results_path = rospy.get_param('~results_path', "results.csv")
 planner_command = rospy.get_param('~planner_command', "")
-time_limit = rospy.get_param('~total_time_limit', 300)  # in seconds?
+time_limit = rospy.get_param('~total_time_limit', 1800)  # in seconds?
 planning_time_limit = rospy.get_param('~planning_time_limit', 10.0)  # in seconds?
 
 # wait for services
