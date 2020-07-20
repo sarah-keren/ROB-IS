@@ -229,7 +229,7 @@ start_time = -1
 finished = False
 
 def main_sampling_loop():
-    global best_vals, all_vals, max_sample_size,plan_recieved, lock#, first_vals
+    global best_vals, all_vals, max_sample_size,plan_recieved, lock, finished#, first_vals
 
     make_prm(max_prm_size)
 
