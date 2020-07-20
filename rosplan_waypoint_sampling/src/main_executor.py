@@ -275,7 +275,7 @@ def main_sampling_loop():
             #    first_vals = res
             all_vals.append(res)
             lock.release()
-            if finished:
+            if finished or approach == 2:
                 return None  # End thread
             # break
     return None
