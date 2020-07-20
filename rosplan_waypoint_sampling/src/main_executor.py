@@ -183,11 +183,12 @@ def plan_cost():
 
     print "======================"
     print "final time: " + str(plan_duration)
+    print "final distance: " + str(total_distance)
     time_at_wp = plan_duration - old_time
     incurred_cost = time_at_wp * current_wp_cost
     total_cost = total_cost + incurred_cost
     print "increasing cost by: " + str(time_at_wp) + " * " + str(current_wp_cost) + " = " +  str(incurred_cost) 
-    return Results(plan, rospy.Time.now()-start_time, plan_duration, total_distance, total_cost)
+    return Results(plan, (rospy.Time.now()-start_time).to_sec(), plan_duration, total_distance, total_cost)
 
 def write_plan(results_all, results_best):
     try:
