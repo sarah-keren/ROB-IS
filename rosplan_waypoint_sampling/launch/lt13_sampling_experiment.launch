@@ -15,7 +15,7 @@
     <arg name="prefs_approach"  default="prefs_ignored" />
     <arg name="prefs_topic"  default="/prefs_map" />
     <arg name="stage_map"            default="simple_house"/> <!-- lt13 or simple_house -->
-    <arg name="total_time_limit"     default="300"/> <!-- seconds -->
+    <arg name="total_time_limit"     default="600"/> <!-- seconds -->
     <arg name="planning_time_limit"  default="10.0"/> <!-- seconds -->
 
 

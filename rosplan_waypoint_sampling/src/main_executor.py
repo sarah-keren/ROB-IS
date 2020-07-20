@@ -33,7 +33,7 @@ data_path = rospy.get_param('~data_path', "")
 initial_state = rospy.get_param('~initial_state', "param_not_set")
 results_path = rospy.get_param('~results_path', "results.csv")
 planner_command = rospy.get_param('~planner_command', "")
-time_limit = rospy.get_param('~total_time_limit', 1800)  # in seconds?
+time_limit = rospy.get_param('~total_time_limit', 300)  # in seconds?
 planning_time_limit = rospy.get_param('~planning_time_limit', 10.0)  # in seconds?
 
 # wait for services
@@ -58,10 +58,11 @@ sub_once = rospy.Subscriber("/rosplan_planner_interface/planner_output", String,
 
 
 class Results:
-    def __init__(self, plan=[], time=0, plan_duration=0, pref_cost=float('inf')):
+    def __init__(self, plan=[], time=0, plan_duration=0, distance=0, pref_cost=float('inf')):
         self.plan = plan
         self.time = time
         self.plan_duration = plan_duration
+        self.distance = distance
         self.pref_cost = pref_cost
 
 
@@ -194,10 +195,11 @@ def write_plan(results_all, results_best):
         f = open(results_path, "a")
         f.write(str(approach)+","+os.path.basename(initial_state)+","+str(results_first.time) + ',' +
                 str(results_best.time) + ',' + str(results_first.plan_duration) + ',' + str(results_best.plan_duration)
+                + ',' + str(results_first.distance) + ',' + str(results_best.distance)
                 + ',' + str(results_first.pref_cost) + ',' + str(results_best.pref_cost))
         for r in results_all:
             f.write(",,,")
-            f.write(str(r.time) + ',' + str(r.plan_duration) + ',' + str(r.pref_cost))
+            f.write(str(r.time) + ',' + str(r.plan_duration) + ',' + str(r.distance) + ',' + str(r.pref_cost))
         f.write("\n")
     except:
         rospy.logerr("KCL: (%s) Error writing to results file." % rospy.get_name())     
@@ -323,7 +325,7 @@ try:
         if not best_vals.plan:
             plan_failed()
         else:
-            rospy.loginfo("KCL: (%s) After %f seconds: duration %f, distance %f, cost %f" % (rospy.get_name(), time_limit, best_vals[1], best_vals[2], best_vals[3]))
+            rospy.loginfo("KCL: (%s) After %f seconds: duration %f, distance %f, cost %f" % (rospy.get_name(), time_limit, best_vals.plan_duration, best_vals.distance, best_vals.pref_cost))
             write_plan(all_vals, best_vals) # plan_duration, total_distance, total_cost
         rospy.loginfo("KCL: (%s) Total time: %f minutes" % (rospy.get_name(), (rospy.Time.now() - start_time).to_sec() / 60.0))
         rospy.loginfo("KCL: (%s) Time limit: %f minutes" % (rospy.get_name(), (time_limit/60.0)))
