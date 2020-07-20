@@ -146,7 +146,7 @@
 
     <!-- main coordinator -->
     <!-- 0: sampling, 1: PRM, 2: Fixed WPs -->
-    <node pkg="rosplan_stage_waypoint_demo" type="main_executor.py" name="coordinator" respawn="false" required="true" output="screen">
+    <node pkg="rosplan_waypoint_sampling" type="main_executor.py" name="coordinator" respawn="false" required="true" output="screen">
         <param name="wait_for_rviz"          value="$(arg rviz)" />
         <param name="max_sample_size"        value="$(arg max_sample_size)" />
         <param name="max_prm_size"           value="$(arg max_prm_size)" />
