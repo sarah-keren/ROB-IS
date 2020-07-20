@@ -149,8 +149,12 @@ def plan_cost():
     plan_duration = float(t1) + float(t2)
 
     # get the cost parameters for waypoints
-    wp_costs = rospy.get_param('/task_planning_waypoints_pref')
-    print wp_costs
+    try:
+        wp_costs = rospy.get_param('/task_planning_waypoints_pref')
+        print wp_costs
+    except KeyError:
+        print 'Preferences not available'
+        wp_costs = None
 
     # get distance travelled
     total_distance = 0
@@ -177,7 +181,7 @@ def plan_cost():
             # 0:dispatch_time 1:action_name 2:vehicle 3:from 4:to) 5:duration
             ta = a.split(" ")[4][0:len(a.split(" ")[4])-1]
             print "new wp: " + ta
-            current_wp_cost = 100 - wp_costs[ta]
+            current_wp_cost = 100 - (wp_costs[ta] if wp_costs else 0)
             print "new wp cost: " + str(current_wp_cost)
 
 
@@ -286,6 +290,7 @@ try:
     rospy.sleep(1)
     ### PRM APPROACH ###
     if approach == 1:
+        start_time = rospy.Time.now()
         sample_count = 3
         while sample_count < max_prm_size:
             make_prm(sample_count)
