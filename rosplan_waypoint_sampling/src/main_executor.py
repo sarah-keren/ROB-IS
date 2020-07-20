@@ -339,9 +339,9 @@ try:
 
         # Check if thread still runnning
         lock.release()
-        if t.isAlive():
-            rospy.loginfo("KCL: (%s) Thread still alive after timeout, waiting for it to end" % rospy.get_name())
-            #t.join()  # Wait for thread to finish nicely
+        #if t.isAlive():
+        #    rospy.loginfo("KCL: (%s) Thread still alive after timeout, waiting for it to end" % rospy.get_name())
+        #    t.join()  # Wait for thread to finish nicely
 
 
 except rospy.ServiceException, e:
