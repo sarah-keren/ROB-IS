@@ -155,7 +155,7 @@
         <param name="data_path"              value="$(find rosplan_stage_waypoint_demo)/pddl/" />
         <param name="results_path"           value="$(arg results_path)" />
         <param name="initial_state"          value="$(arg initial_state)" />
-        <param name="planner_command"        value="timeout 10 $(find rosplan_planning_system)/common/bin/popf DOMAIN PROBLEM" />
+        <param name="planner_command"        value="timeout $(arg planning_time_limit) $(find rosplan_planning_system)/common/bin/popf -n DOMAIN PROBLEM" />
         <param name="sampling_approach"      value="$(arg sampling_approach)" />
         <param name="planning_time_limit"    value="$(arg planning_time_limit)" />
         <param name="total_time_limit"       value="$(arg total_time_limit)" />
