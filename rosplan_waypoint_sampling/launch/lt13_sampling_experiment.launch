@@ -94,7 +94,7 @@
             <param name="rosplan_kb_name"     value="rosplan_knowledge_base" />
             <!--<param name="costmap_topic"       value="/costmap" />-->
             <param name="costmap_topic"       value="/merged_map" if="$(arg generate_best_waypoints)"/>
-            <param name="costmap_topic"       value="" unless="$(arg generate_best_waypoints)"/>
+            <param name="costmap_topic"       value="/map" unless="$(arg generate_best_waypoints)"/>
             <param name="prefs_topic"        value="$(arg prefs_topic)" />
 
             <!-- The radius around a sampled point for which the sampling probability is reduced to 0 -->
