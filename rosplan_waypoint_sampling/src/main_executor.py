@@ -264,8 +264,6 @@ def main_sampling_loop():
                 resamples += 1
             else:
                 sample_count += 2
-            if finished or approach == 2:
-                return None  # End thread
         else:
             # Wait for plan
             while not rospy.is_shutdown() and not plan_recieved:
@@ -281,8 +279,8 @@ def main_sampling_loop():
             #    first_vals = res
             all_vals.append(res)
             lock.release()
-            if finished or approach == 2:
-                return None  # End thread
+        if finished or approach == 2:
+            return None  # End thread
             # break
     return None
 
