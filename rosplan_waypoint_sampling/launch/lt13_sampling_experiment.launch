@@ -10,7 +10,8 @@
     <arg name="prefs_file"       default="$(find hidden_costs_generator)/maps/objects-empty.yaml" />
     <arg name="initial_state"    default="$(find hidden_costs_generator)/pddl_problems/problem_1goal_simple_house_30doughnuts_variant00.yaml.pddl" />
     <arg name="results_path"     default="$(find rosplan_stage_waypoint_demo)/pddl/results.csv" />
-    <arg name="generate_best_waypoints"     default="false" />
+    <arg name="generate_best_waypoints"     default="false" /> <!-- activity info -->
+    <arg name="ai_mapserver"     default="false" /> <!-- for approach 1 -->
     <!-- how preferences are integrated into the sampling process: prefs_cast (prefs used to selected casted WP), prefs_expand (prefs used to selected WP to expand), prefs_ignored-->
     <arg name="prefs_approach"  default="prefs_ignored" />
     <arg name="prefs_topic"  default="/prefs_map" />
@@ -33,7 +34,7 @@
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
 
     <!-- AMCL -->
-    <include file="$(find turtlebot3_navigation)/launch/amcl.launch">
+    <include file="$(find turtlebot3_navigation)/launch/amcl.launch" unless="$(arg rviz)">
         <arg name="scan_topic" value="base_scan" />
         <arg name="initial_pose_x" value="13.40" if="$(eval arg('stage_map')=='lt13')"/>
         <arg name="initial_pose_x" value="6.525" if="$(eval arg('stage_map')=='simple_house')"/>
@@ -57,7 +58,8 @@
         <arg name="update_connectivity" value="$(eval arg('sampling_approach')==1)" />
         <arg name="wp_reference_frame"  value="/map" />
         <arg name="rosplan_kb_name"     value="rosplan_knowledge_base" />
-        <arg name="costmap_topic"       value="/merged_map" />
+            <arg name="costmap_topic"       value="/merged_map" if="$(arg ai_mapserver)"/>
+            <arg name="costmap_topic"       value="/map" unless="$(arg ai_mapserver)"/>
         <arg name="prefs_topic"         value="$(arg prefs_topic)"/>
         <arg name="prefs_approach"      value="$(arg prefs_approach)" />
     </include>

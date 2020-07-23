@@ -83,10 +83,10 @@ class HiddenCostMap:
         d = math.sqrt((p[0] - c[0]) ** 2 + (p[1] - c[1]) ** 2)
         if (d > mu - 2 * sigma and d < mu + 2 * sigma):
             prob = 1-(math.e ** (-((d - mu) ** 2) / (2 * sigma ** 2)) / math.sqrt(2 * math.pi * sigma ** 2))
-	else:
+        else:
             prob = 1
-        return prob
-	
+        return prob if prob > 0 else 0
+    
 
 
     def _banana(self, p, c, angle, arclen, mu, sigma):
@@ -136,7 +136,7 @@ class HiddenCostMap:
             self.doughnuts = rospy.get_param('~doughnuts')
         if rospy.has_param('~bananas'):
             self.bananas = rospy.get_param('~bananas')
-	
+    
         # Wait for map
         while not rospy.is_shutdown() and not self._static_map:
             rospy.sleep(0.5)
