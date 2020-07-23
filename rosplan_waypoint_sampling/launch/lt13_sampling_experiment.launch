@@ -34,7 +34,7 @@
     <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
 
     <!-- AMCL -->
-    <include file="$(find turtlebot3_navigation)/launch/amcl.launch" unless="$(arg rviz)">
+    <include file="$(find turtlebot3_navigation)/launch/amcl.launch" if="$(arg rviz)">
         <arg name="scan_topic" value="base_scan" />
         <arg name="initial_pose_x" value="13.40" if="$(eval arg('stage_map')=='lt13')"/>
         <arg name="initial_pose_x" value="6.525" if="$(eval arg('stage_map')=='simple_house')"/>
