@@ -29,6 +29,7 @@ class HiddenCostMap:
         if rospy.has_param('~soft_prefs'):
             self.soft_prefs = rospy.get_param('~soft_prefs')
 
+        self.overlaps = rospy.get_param('~with_overlaps', True)
 
         rospy.Subscriber("map", OccupancyGrid, self.set_map)
         self.obj_pub = rospy.Publisher('objects', MarkerArray, queue_size=10, latch=True)
@@ -215,6 +216,8 @@ class HiddenCostMap:
                 v = (object_map.data[y*object_map.info.width + x] * hiddenpref_map.data[y*hiddenpref_map.info.width + x])
                 #v = v/100
                 merged.data.append(v)
+        if not self.overlaps:
+            merged.data = map(lambda c: 100 if c > 0 else 0, merged.data)
         self.mergemap_pub.publish(merged)
 
 
