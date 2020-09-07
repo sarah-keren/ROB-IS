@@ -5,6 +5,8 @@ import sys
 import time
 import os
 import time
+import re 
+import copy
 
 from std_msgs.msg import String
 from std_srvs.srv import Empty, EmptyResponse
@@ -21,6 +23,10 @@ import threading
 # get path of pkg
 rospack = rospkg.RosPack()
 rospy.init_node("coordinator")
+
+TIME_REGEX = re.compile(r'; Time (.*)$', re.MULTILINE)
+PLAN_FILE_PATH = "/root/ws/src/rosplan_demos/rosplan_stage_waypoint_demo/pddl/plan.pddl"
+PRE_PLAN_TIME = 0
 
 # load parameters
 wait_for_rviz = rospy.get_param('~wait_for_rviz', False)
@@ -114,13 +120,14 @@ def wait_for_sensing():
         rospy.logerr("KCL: (%s) Robot at was not added!" % rospy.get_name())
 
 def generate_problem_and_plan():
-    global planning_time
+    global planning_time, PRE_PLAN_TIME, start_time
     rospy.loginfo("KCL: (%s) Calling problem generation" % rospy.get_name())
     pg = rospy.ServiceProxy('/rosplan_problem_interface/problem_generation_server', Empty)
     if not pg():
         rospy.logerr("KCL: (%s) No problem was generated!" % rospy.get_name())
 
     rospy.loginfo("KCL: (%s) Calling planner" % rospy.get_name())
+    PRE_PLAN_TIME = (rospy.Time.now()-start_time).to_sec() / 60.0
     pi = rospy.ServiceProxy('/rosplan_planner_interface/planning_server_params', PlanningService)
 
     start = time.time()
@@ -195,6 +202,16 @@ def plan_cost():
     return Results(plan, (rospy.Time.now()-start_time).to_sec(), plan_duration, total_distance, total_cost)
 
 def write_plan(results_all, results_best):
+    if approach == 2:
+        global PRE_PLAN_TIME
+        f = open(PLAN_FILE_PATH, 'r')
+        p_raw = f.read()
+        f.close()
+        times = TIME_REGEX.findall(p_raw)
+        print times
+        results_best = copy.deepcopy(results_best)
+        results_all[0].time = PRE_PLAN_TIME + float(times[0])
+        results_best.time = PRE_PLAN_TIME + float(times[-1])
     try:
         results_first = results_all[0]
         f = open(results_path, "a")
